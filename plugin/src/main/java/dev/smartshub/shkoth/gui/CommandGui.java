@@ -40,7 +40,7 @@ public class CommandGui extends BaseUpdatableGui {
     @Override
     public void open(Player player) {
         Gui gui = Gui.gui()
-                .title(parser.parse("<gold>Configure Commands"))
+                .title(parser.parse("<gold>設定指令"))
                 .rows(2)
                 .create();
 
@@ -56,7 +56,7 @@ public class CommandGui extends BaseUpdatableGui {
                 kothToRegisterCache.getKothToRegister(player.getUniqueId()).getWinnersCommands());
 
         return ItemBuilder.from(Material.DIAMOND)
-                .name(parser.parse("<green>Winner Commands"))
+                .name(parser.parse("<green>獲勝指令"))
                 .lore(winCommands)
                 .asGuiItem(event -> {
                     event.setCancelled(true);
@@ -70,7 +70,7 @@ public class CommandGui extends BaseUpdatableGui {
                 kothToRegisterCache.getKothToRegister(player.getUniqueId()).getStartCommands());
 
         return ItemBuilder.from(Material.EMERALD)
-                .name(parser.parse("<yellow>Start Commands"))
+                .name(parser.parse("<yellow>啟動指令"))
                 .lore(startCommands)
                 .asGuiItem(event -> {
                     event.setCancelled(true);
@@ -84,7 +84,7 @@ public class CommandGui extends BaseUpdatableGui {
                 kothToRegisterCache.getKothToRegister(player.getUniqueId()).getEndCommands());
 
         return ItemBuilder.from(Material.REDSTONE)
-                .name(parser.parse("<red>End Commands"))
+                .name(parser.parse("<red>結束指令"))
                 .lore(endCommands)
                 .asGuiItem(event -> {
                     event.setCancelled(true);
@@ -95,7 +95,7 @@ public class CommandGui extends BaseUpdatableGui {
 
     private GuiItem createSaveItem(Player player, Gui gui) {
         return ItemBuilder.from(Material.EMERALD_BLOCK)
-                .name(parser.parse("<green>Save commands"))
+                .name(parser.parse("<green>儲存指令"))
                 .asGuiItem(event -> {
                     event.setCancelled(true);
                     kothToRegisterCache.getKothToRegister(player.getUniqueId()).buildCommands();
@@ -105,7 +105,7 @@ public class CommandGui extends BaseUpdatableGui {
 
     private GuiItem createBackItem(Player player, Gui gui) {
         return ItemBuilder.from(Material.ARROW)
-                .name(parser.parse("<red>Back to Creating Menu"))
+                .name(parser.parse("<red>返回建立選單"))
                 .asGuiItem(event -> {
                     event.setCancelled(true);
                     UUID uuid = player.getUniqueId();
@@ -124,16 +124,17 @@ public class CommandGui extends BaseUpdatableGui {
 
     private List<Component> createCommandLore(String type, List<String> commands) {
         List<Component> lore = new ArrayList<>();
-        lore.add(parser.parse("<gray>Right Click: <white>Add command"));
-        lore.add(parser.parse("<gray>Left Click: <white>Clear all"));
-        lore.add(parser.parse("<gray>Current " + type + " commands:"));
+        lore.add(parser.parse("<gray>右鍵點擊: <white>新增指令"));
+        lore.add(parser.parse("<gray>左鍵點擊: <white>清除所有"));
+        String typeName = type.equals("winner") ? "獲勝" : type.equals("start") ? "啟動" : "結束";
+        lore.add(parser.parse("<gray>目前 " + typeName + " 指令:"));
 
         commands.forEach(command -> {
             lore.add(parser.parse("<gray>- " + command));
         });
 
         if (commands.isEmpty()) {
-            lore.add(parser.parse("<dark_gray>No commands set"));
+            lore.add(parser.parse("<dark_gray>未設定任何指令"));
         }
 
         return lore;
@@ -145,7 +146,7 @@ public class CommandGui extends BaseUpdatableGui {
         if (event.isRightClick()) {
             player.closeInventory();
             kothToRegisterCache.getKothToRegister(player.getUniqueId()).setWaitingToFill(waitingType);
-            player.sendMessage(parser.parse("<green>Type the command in chat, or <red>'cancel'<green> to return:"));
+            player.sendMessage(parser.parse("<green>請在聊天欄輸入指令，或輸入 <red>'cancel'<green> 取消返回:"));
         } else if (event.isLeftClick()) {
             clearAction.run();
             updateItem(gui, player, slot);

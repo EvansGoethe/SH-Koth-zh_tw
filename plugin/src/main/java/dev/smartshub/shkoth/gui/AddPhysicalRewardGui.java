@@ -34,7 +34,7 @@ public class AddPhysicalRewardGui {
 
     public void open(Player player) {
         StorageGui gui = Gui.storage()
-                .title(parser.parse("<gold>Physical Rewards Configuration"))
+                .title(parser.parse("<gold>實體獎勵設定"))
                 .rows(4)
                 .create();
 
@@ -71,13 +71,13 @@ public class AddPhysicalRewardGui {
 
     private GuiItem createSaveButton(StorageGui gui, Player player) {
         return ItemBuilder.from(Material.EMERALD_BLOCK)
-                .name(parser.parse("<green><bold>Save Rewards"))
+                .name(parser.parse("<green><bold>儲存獎勵"))
                 .lore(
-                        parser.parse("<gray>Click to save all items"),
-                        parser.parse("<gray>as physical rewards!"),
+                        parser.parse("<gray>點擊以儲存所有物品"),
+                        parser.parse("<gray>作為實體獎勵！"),
                         Component.empty(),
-                        parser.parse("<yellow>Items in your inventory will"),
-                        parser.parse("<yellow>be converted to rewards.")
+                        parser.parse("<yellow>你放入的物品將會"),
+                        parser.parse("<yellow>轉換為活動獎勵。")
                 )
                 .glow()
                 .asGuiItem(event -> {
@@ -88,12 +88,12 @@ public class AddPhysicalRewardGui {
 
     private GuiItem createDiscardButton(StorageGui gui, Player player) {
         return ItemBuilder.from(Material.REDSTONE_BLOCK)
-                .name(parser.parse("<red><bold>Discard Changes"))
+                .name(parser.parse("<red><bold>放棄變更"))
                 .lore(
-                        parser.parse("<gray>Click to return to main GUI"),
-                        parser.parse("<gray>without saving changes."),
+                        parser.parse("<gray>點擊以返回主選單"),
+                        parser.parse("<gray>而不儲存任何變更。"),
                         Component.empty(),
-                        parser.parse("<red>All items will be lost!")
+                        parser.parse("<red>所有放入的物品將會遺失！")
                 )
                 .asGuiItem(event -> {
                     event.setCancelled(true);
@@ -134,7 +134,7 @@ public class AddPhysicalRewardGui {
         kothData.clearPhysicalRewards();
         kothData.setPhysicalRewards(rewards);
 
-        player.sendMessage(parser.parse("<green>Successfully saved " + rewards.size() + " physical rewards!"));
+        player.sendMessage(parser.parse("<green>成功儲存了 " + rewards.size() + " 個實體獎勵！"));
 
         guiService.openCreateKothGui(player);
     }
@@ -146,7 +146,7 @@ public class AddPhysicalRewardGui {
             }
         }
 
-        player.sendMessage(parser.parse("<yellow>Changes discarded. Returning to main menu..."));
+        player.sendMessage(parser.parse("<yellow>已放棄變更。正在返回主選單..."));
         guiService.openCreateKothGui(player);
     }
 

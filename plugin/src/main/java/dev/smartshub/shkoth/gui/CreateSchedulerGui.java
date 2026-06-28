@@ -48,7 +48,7 @@ public class CreateSchedulerGui extends BaseUpdatableGui {
         }
 
         Gui gui = Gui.gui()
-                .title(parser.parse("<gold>Create KoTH Schedule"))
+                .title(parser.parse("<gold>建立 KOTH 排程"))
                 .rows(2)
                 .create();
 
@@ -74,9 +74,18 @@ public class CreateSchedulerGui extends BaseUpdatableGui {
         if (day == null) day = DayOfWeek.MONDAY;
 
         DayOfWeek finalDay = day;
+        String dayName = switch (day) {
+            case MONDAY -> "星期一";
+            case TUESDAY -> "星期二";
+            case WEDNESDAY -> "星期三";
+            case THURSDAY -> "星期四";
+            case FRIDAY -> "星期五";
+            case SATURDAY -> "星期六";
+            case SUNDAY -> "星期日";
+        };
         return ItemBuilder.from(Material.PAPER)
-                .name(parser.parse("<green>Day: <gray>" + day.name().toLowerCase()))
-                .lore(parser.parse("<dark_gray>Click: <gray>Next Day"))
+                .name(parser.parse("<green>星期: <gray>" + dayName))
+                .lore(parser.parse("<dark_gray>點擊: <gray>下一天"))
                 .asGuiItem(event -> {
                     event.setCancelled(true);
                     DayOfWeek next = finalDay.plus(1);
@@ -89,9 +98,9 @@ public class CreateSchedulerGui extends BaseUpdatableGui {
         int hour = kothToRegisterCache.getKothToRegister(player.getUniqueId()).getHour();
 
         return ItemBuilder.from(Material.CLOCK)
-                .name(parser.parse("<yellow>Hour: " + hour))
-                .lore(parser.parse("<dark_gray>Right Click: <gray>Increase by 1"),
-                        parser.parse("<dark_gray>Left Click: <gray>Decrease by 1"))
+                .name(parser.parse("<yellow>小時: " + hour))
+                .lore(parser.parse("<dark_gray>右鍵點擊: <gray>增加 1 小時"),
+                        parser.parse("<dark_gray>左鍵點擊: <gray>減少 1 小時"))
                 .asGuiItem(event -> {
                     event.setCancelled(true);
                     int currentHour = kothToRegisterCache.getKothToRegister(player.getUniqueId()).getHour();
@@ -114,11 +123,11 @@ public class CreateSchedulerGui extends BaseUpdatableGui {
         int minute = kothToRegisterCache.getKothToRegister(player.getUniqueId()).getMinute();
 
         return ItemBuilder.from(Material.REDSTONE)
-                .name(parser.parse("<aqua>Minutes: " + minute))
-                .lore(parser.parse("<dark_gray>Right Click: <gray>Increase by 1"),
-                        parser.parse("<dark_gray>Left Click: <gray>Decrease by 1"),
-                        parser.parse("<dark_gray>Shift Right Click: <gray>Increase by 10"),
-                        parser.parse("<dark_gray>Shift Left Click: <gray>Decrease by 10"))
+                .name(parser.parse("<aqua>分鐘: " + minute))
+                .lore(parser.parse("<dark_gray>右鍵點擊: <gray>增加 1 分鐘"),
+                        parser.parse("<dark_gray>左鍵點擊: <gray>減少 1 分鐘"),
+                        parser.parse("<dark_gray>Shift + 右鍵: <gray>增加 10 分鐘"),
+                        parser.parse("<dark_gray>Shift + 左鍵: <gray>減少 10 分鐘"))
                 .asGuiItem(event -> {
                     event.setCancelled(true);
                     int currentMinute = kothToRegisterCache.getKothToRegister(player.getUniqueId()).getMinute();
@@ -144,7 +153,7 @@ public class CreateSchedulerGui extends BaseUpdatableGui {
 
     private GuiItem createBackItem(Player player, Gui gui) {
         return ItemBuilder.from(Material.ARROW)
-                .name(parser.parse("<red>Back to Creating Menu"))
+                .name(parser.parse("<red>返回建立選單"))
                 .asGuiItem(event -> {
                     event.setCancelled(true);
                     guiService.openCreateKothGui(player);

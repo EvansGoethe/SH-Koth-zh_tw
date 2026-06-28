@@ -23,23 +23,23 @@ public class KothLoreBoardPreview {
 
         List<Component> lore = new ArrayList<>();
 
-        lore.add(parser.parse("<dark_gray>Right click: <gray>add line"));
-        lore.add(parser.parse("<dark_gray>Left click: <gray>remove last line"));
-        lore.add(parser.parse("<dark_gray>Shift click: <gray>remove all lines"));
+        lore.add(parser.parse("<dark_gray>右鍵點擊: <gray>新增內容行"));
+        lore.add(parser.parse("<dark_gray>左鍵點擊: <gray>移除最後一行"));
+        lore.add(parser.parse("<dark_gray>Shift 點擊: <gray>清除所有內容"));
         lore.add(Component.empty());
-        lore.add(parser.parse("<yellow><bold>Preview:"));
+        lore.add(parser.parse("<yellow><bold>預覽效果:"));
         lore.add(Component.empty());
 
         String title = data.getScoreboardCapturingTitle();
-        lore.add(parseForLore("Title: " + (title != null ? title : "Not set"), "<gold>"));
+        lore.add(parseForLore("標題: " + (title != null ? title : "尚未設定"), "<gold>"));
 
         lore.add(Component.empty());
 
         List<String> content = data.getScoreboardCapturingContent();
         if (content == null || content.isEmpty()) {
-            lore.add(parser.parse("<dark_gray>No lines set"));
+            lore.add(parser.parse("<dark_gray>未設定內容"));
         } else {
-            lore.add(parser.parse("<aqua>Lines (" + content.size() + "):"));
+            lore.add(parser.parse("<aqua>內容行數 (" + content.size() + "):"));
             for (int i = 0; i < content.size(); i++) {
                 String line = content.get(i);
                 lore.add(parseForLore((i + 1) + ". " + line, "<white>"));
@@ -54,23 +54,23 @@ public class KothLoreBoardPreview {
 
         List<Component> lore = new ArrayList<>();
 
-        lore.add(parser.parse("<dark_gray>Right click: <gray>add line"));
-        lore.add(parser.parse("<dark_gray>Left click: <gray>remove last line"));
-        lore.add(parser.parse("<dark_gray>Shift click: <gray>remove all lines"));
+        lore.add(parser.parse("<dark_gray>右鍵點擊: <gray>新增內容行"));
+        lore.add(parser.parse("<dark_gray>左鍵點擊: <gray>移除最後一行"));
+        lore.add(parser.parse("<dark_gray>Shift 點擊: <gray>清除所有內容"));
         lore.add(Component.empty());
-        lore.add(parser.parse("<yellow><bold>Preview:"));
+        lore.add(parser.parse("<yellow><bold>預覽效果:"));
         lore.add(Component.empty());
 
         String title = data.getScoreboardWaitingTitle();
-        lore.add(parseForLore("Title: " + (title != null ? title : "Not set"), "<gold>"));
+        lore.add(parseForLore("標題: " + (title != null ? title : "尚未設定"), "<gold>"));
 
         lore.add(Component.empty());
 
         List<String> content = data.getScoreboardWaitingContent();
         if (content == null || content.isEmpty()) {
-            lore.add(parser.parse("<dark_gray>No lines set"));
+            lore.add(parser.parse("<dark_gray>未設定內容"));
         } else {
-            lore.add(parser.parse("<aqua>Lines (" + content.size() + "):"));
+            lore.add(parser.parse("<aqua>內容行數 (" + content.size() + "):"));
             for (int i = 0; i < content.size(); i++) {
                 String line = content.get(i);
                 lore.add(parseForLore((i + 1) + ". " + line, "<white>"));
@@ -82,7 +82,7 @@ public class KothLoreBoardPreview {
 
     private Component parseForLore(String text, String defaultColor) {
         if (text == null || text.trim().isEmpty()) {
-            return parser.parse("<gray>Not set");
+            return parser.parse("<gray>尚未設定");
         }
 
         try {
