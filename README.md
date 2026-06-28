@@ -1,5 +1,7 @@
 # SH-KoTH
 
+[繁體中文](README_zh_TW.md)
+
 [![BuiltByBit](https://img.shields.io/badge/BBB-Profile-00bfff?logo=bit&logoColor=white)](https://builtbybit.com/resources/sh-koth.76419/)
 [![Modrinth](https://img.shields.io/badge/Modrinth-Download-1bd96a?logo=modrinth&logoColor=white)](https://modrinth.com/plugin/sh-koth)
 [![Documentation](https://img.shields.io/badge/Docs-Available-blue?logo=gitbook)](https://docs.smartshub.dev/sh-koth/intro/introduction/)
