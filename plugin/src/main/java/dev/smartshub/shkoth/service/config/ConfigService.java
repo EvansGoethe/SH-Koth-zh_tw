@@ -67,6 +67,19 @@ public class ConfigService {
             if (!folder.exists()) folder.mkdirs();
 
             File configFile = new File(folder, fileName);
+
+            if (configType.getParentFolder().equals("lang")) {
+                String language = getLanguageSetting();
+                if (language != null && !language.equalsIgnoreCase("en")) {
+                    String extension = resourcePath.substring(resourcePath.lastIndexOf("."));
+                    String baseName = resourcePath.substring(0, resourcePath.lastIndexOf("."));
+                    String langResourcePath = baseName + "_" + language.toLowerCase() + extension;
+                    if (plugin.getResource(langResourcePath) != null) {
+                        resourcePath = langResourcePath;
+                    }
+                }
+            }
+
             InputStream defaultResource = plugin.getResource(resourcePath);
 
             if (defaultResource == null) {
@@ -190,5 +203,14 @@ public class ConfigService {
         reload(ConfigType.SOUND);
         reload(ConfigType.BOSSBAR);
         provide(ConfigType.DISCORD);
+    }
+
+    private String getLanguageSetting() {
+        File hooksFile = new File(new File(plugin.getDataFolder(), "configuration"), "hooks.yml");
+        if (hooksFile.exists()) {
+            org.bukkit.configuration.file.YamlConfiguration config = org.bukkit.configuration.file.YamlConfiguration.loadConfiguration(hooksFile);
+            return config.getString("language", "en");
+        }
+        return "en";
     }
 }

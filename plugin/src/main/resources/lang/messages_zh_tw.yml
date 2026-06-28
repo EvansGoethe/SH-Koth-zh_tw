@@ -1,0 +1,80 @@
+#  __  __
+# |  \/  |
+# | \  / | ___  ___ ___  __ _  __ _  ___  ___
+# | |\/| |/ _ \/ __/ __|/ _` |/ _` |/ _ \/ __|
+# | |  | |  __/\__ \__ \ (_| | (_| |  __/\__ \
+# |_|  |_|\___||___/___/\__,_|\__, |\___||___/
+#                              __/ |
+#                             |___/
+# 訊息設定檔 (繁體中文)
+# * 格式: MiniMessage (https://docs.advntr.dev/minimessage/format)
+# * 每個訊息均支援 PlaceholderAPI 佔位符
+# * 如果想停用某個廣播訊息，只需將其設為空字串: ""
+# 支援服務: https://discord.smartshub.dev/
+# 文件: https://docs.smartshub.dev/sh-koth/intro/introduction/
+
+exception:
+  no-permission: "<red>您沒有權限執行此操作。"
+
+# * %shkoth_koth_context% - KOTH 的顯示名稱 (僅在發送訊息的當下有效)
+# 如需「永久有效」的佔位符，請參考文件說明的內容：
+koth:
+  force-start: "<green>KOTH 事件 %shkoth_koth_context% 已被強制啟動。"
+  force-stop: "<red>KOTH 事件 %shkoth_koth_context% 已被強制停止。"
+  force-stop-all: "<red>所有 KOTH 事件已被強制停止。"
+  add-physical-reward: "<light_purple>實體獎勵已成功加入此 KOTH 中。"
+  teleport: "<green>您已傳送到 KOTH %shkoth_koth_context%。"
+  leave: "<red>您已離開 KOTH %shkoth_koth_context%。"
+  capture:
+    start: "<green>您開始佔領 KOTH %shkoth_koth_context%！"
+    stop: "<red>您停止了佔領 KOTH %shkoth_koth_context%。"
+  reload: "<light_purple>KOTH 設定檔已成功重載。"
+  enter: "<green>您已進入 KOTH %shkoth_koth_context% 區域。"
+
+# * %shkoth_player_context% - 玩家名稱 (僅在發送訊息的當下有效)
+# * %shkoth_aux_context% - 輔助玩家名稱 (僅在發送訊息的當下有效)
+# 如需「永久有效」的佔位符，請參考文件說明的內容：
+team:
+  chat-prefix: "<aqua>[隊伍聊天] "
+  player-not-found: "<red>找不到指定的玩家。"
+  not-team-leader: "<red>您不是隊伍隊長。"
+  target-already-in-a-team: "<red>目標玩家已經在隊伍中。"
+  target-already-invited: "<red>目標玩家已被邀請過。"
+  invitation-received: "<green>您收到了來自 %shkoth_player_context% 的隊伍邀請。"
+  invitation-sent: "<green>已成功向 %shkoth_aux_context% 發送隊伍邀請。"
+  no-pending-invitations: "<red>您沒有任何待處理的隊伍邀請。"
+  invitation-accepted: "<green>已接受隊伍邀請。"
+  invitation-declined: "<red>%shkoth_player_context% 拒絕了隊伍邀請。"
+  invitation-declined-success: "<green>您已成功拒絕隊伍邀請。"
+  kicked-from-team: "<red>您已被踢出隊伍。"
+  member-kicked: "<green>%shkoth_player_context% 已被踢出您的隊伍。"
+  kick-member-success: "<green>您已成功將 %shkoth_player_context% 踢出您的隊伍。"
+  removed-from-team: "<red>您已被移出隊伍。"
+  member-removed: "<green>%shkoth_player_context% 已被移出您的隊伍。"
+  not-in-a-team: "<red>您不在任何隊伍中。"
+  team-info-header: "<light_purple>--- 隊伍資訊 ---"
+  team-info-footer: "<light_purple>----------------"
+  change-leader: "<light_purple>您更改了隊伍隊長，新隊長為 %shkoth_player_context%。"
+  transferred-leadership-success: "<green>您已成功將隊長權限轉移給 %shkoth_player_context%。"
+  you-are-leader-now: "<green>您現在是隊伍隊長了！"
+  team-created-success: "<green>隊伍創建成功。"
+  added-to-team: "<green>您已被加入隊伍。"
+  new-member-joined: "<green>%shkoth_player_context% 已加入您的隊伍。"
+  disbanded-team-success: "<green>您已成功解散隊伍。"
+  dissolved: "<red>隊伍已被 %shkoth_player_context% 解散。"
+  already-in-a-team: "<red>您已經在隊伍中。"
+  cant-create-team: "<red>您現在無法創建隊伍。"
+  cant-join-team: "<red>您現在無法加入此隊伍。"
+  leader-cant-leave: "<red>隊伍隊長無法直接離開隊伍。"
+  cant-leave-team: "<red>您無法離開隊伍。"
+  only-leader-can-disband: "<red>只有隊伍隊長可以解散隊伍。"
+  cant-disband-team: "<red>您無法解散隊伍。"
+  only-leader-can-kick: "<red>只有隊伍隊長可以踢出成員。"
+  cant-kick-yourself: "<red>您不能把自己踢出隊伍。"
+  player-not-in-your-team: "<red>指定的玩家不在您的隊伍中。"
+  cant-kick-member: "<red>您無法踢出 %shkoth_player_context%。"
+  only-leader-can-transfer: "<red>只有隊伍隊長可以轉移隊長職位。"
+  cant-transfer-leadership: "<red>您無法轉移隊長職位。"
+
+# 請勿更動此項！
+config-version: 1
