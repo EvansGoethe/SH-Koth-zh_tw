@@ -37,12 +37,14 @@
 
 ### 🎨 重新設計的 `/koth editor` GUI
 - **6 列 × 3 分頁版面**：基本資料 ／ 時間與計分板 ／ 獎勵與指令
+- **Anvil 文字輸入**：ID、顯示名稱、計分板標題全部改用 Bukkit 原生 Anvil GUI 輸入，告別「關閉視窗→去聊天欄打字→再開」的流程；輸入當下即時驗證（規則錯誤會帶著錯誤訊息再開一次 Anvil）
+- **計分板逐行編輯器**：點計分板內容開啟分頁列表，每行可獨立編輯（Anvil）／上移／下移／刪除，新增也是 Anvil
 - **即時驗證提示**：每個欄位 lore 顯示 ✓/✗ 狀態，缺項列在儲存按鈕 lore
 - **防呆機制**：ID 字元規則檢查、`捕獲時間 ≤ 最長時間`、新建時不能撞已存在 ID
 - **新建/編輯模式區分**：儲存按鈕材質與文字會自動切換（Slime Ball 建立 / Anvil 儲存變更）
 - **複製其他 KOTH 設定**：一鍵從現有 KOTH 帶入欄位
 - **一鍵測試**：直接啟動該 KOTH 一回合驗證設定
-- 程式內 slot 編號全部具名常數化、共用 `numericItem` / `toggleItem` / `chatPromptItem` 工廠
+- 程式內 slot 編號全部具名常數化、共用 `numericItem` / `toggleItem` / `promptItem` 工廠
 
 ### 🚫 已停用的功能
 - **組隊機制**：本 Fork 預設停用 `/koth team` 指令與相關 GUI toggle，KOTH 一律 solo。底層 API 保留，需要時可恢復。
