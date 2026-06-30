@@ -229,5 +229,67 @@ gui:
   reward:
     offline-received: "<green>You received {0} pending KOTH reward(s)!"
 
+  edit-list:
+    title: "<gold>Select a KOTH to edit"
+    item-name: "<gold>{0}"
+    item-lore-display: "<gray>Display name: <white>{0}"
+    item-lore-type: "<gray>Type: <yellow>{0}"
+    item-lore-state: "<gray>State: <green>{0}"
+    item-lore-action: "<yellow>Click to edit this KOTH"
+    prev-page: "<yellow>Previous page"
+    next-page: "<yellow>Next page"
+
+  add-reward:
+    title: "<gold>Physical Reward Setup"
+    save-name: "<green><bold>Save Rewards"
+    save-lore-1: "<gray>Click to save all items"
+    save-lore-2: "<gray>as physical rewards!"
+    save-lore-3: "<yellow>The items you place will be"
+    save-lore-4: "<yellow>converted into event rewards."
+    discard-name: "<red><bold>Discard Changes"
+    discard-lore-1: "<gray>Click to return to the main menu"
+    discard-lore-2: "<gray>without saving any changes."
+    discard-lore-3: "<red>All placed items will be lost!"
+    saved-chat: "<green>Saved {0} physical reward(s)!"
+    discarded-chat: "<yellow>Changes discarded. Returning to the main menu..."
+
+  command-editor:
+    title: "<gold>Configure Commands"
+    winner-name: "<green>Winner Commands"
+    start-name: "<yellow>Start Commands"
+    end-name: "<red>End Commands"
+    save-name: "<green>Save Commands"
+    back-name: "<red>Back to the creation menu"
+    hint-add: "<gray>Right click: <white>add a command"
+    hint-clear: "<gray>Left click: <white>clear all"
+    current-prefix: "<gray>Current {0} commands:"
+    type-winner: "winner"
+    type-start: "start"
+    type-end: "end"
+    command-line: "<gray>- {0}"
+    no-commands: "<dark_gray>No commands configured"
+    chat-prompt: "<green>Type the command in chat, or <red>'cancel'<green> to abort:"
+
+  scheduler:
+    title: "<gold>Create KOTH Schedule"
+    day-name: "<green>Day: <gray>{0}"
+    day-lore: "<dark_gray>Click: <gray>next day"
+    day-monday: "Monday"
+    day-tuesday: "Tuesday"
+    day-wednesday: "Wednesday"
+    day-thursday: "Thursday"
+    day-friday: "Friday"
+    day-saturday: "Saturday"
+    day-sunday: "Sunday"
+    hour-name: "<yellow>Hour: {0}"
+    hour-hint-add: "<dark_gray>Right click: <gray>+1 hour"
+    hour-hint-sub: "<dark_gray>Left click: <gray>-1 hour"
+    minute-name: "<aqua>Minute: {0}"
+    minute-hint-add: "<dark_gray>Right click: <gray>+1 minute"
+    minute-hint-sub: "<dark_gray>Left click: <gray>-1 minute"
+    minute-hint-add-10: "<dark_gray>Shift+Right: <gray>+10 minutes"
+    minute-hint-sub-10: "<dark_gray>Shift+Left: <gray>-10 minutes"
+    back-name: "<red>Back to the creation menu"
+
 # DO NOT TOUCH THIS!
 config-version: 1

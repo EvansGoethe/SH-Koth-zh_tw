@@ -229,5 +229,67 @@ gui:
   reward:
     offline-received: "<green>你領取了 {0} 件 KOTH 離線獎勵！"
 
+  edit-list:
+    title: "<gold>選擇要編輯的 KOTH"
+    item-name: "<gold>{0}"
+    item-lore-display: "<gray>名稱: <white>{0}"
+    item-lore-type: "<gray>類型: <yellow>{0}"
+    item-lore-state: "<gray>狀態: <green>{0}"
+    item-lore-action: "<yellow>點擊以編輯此 KOTH 設定"
+    prev-page: "<yellow>上一頁"
+    next-page: "<yellow>下一頁"
+
+  add-reward:
+    title: "<gold>實體獎勵設定"
+    save-name: "<green><bold>儲存獎勵"
+    save-lore-1: "<gray>點擊以儲存所有物品"
+    save-lore-2: "<gray>作為實體獎勵！"
+    save-lore-3: "<yellow>你放入的物品將會"
+    save-lore-4: "<yellow>轉換為活動獎勵。"
+    discard-name: "<red><bold>放棄變更"
+    discard-lore-1: "<gray>點擊以返回主選單"
+    discard-lore-2: "<gray>而不儲存任何變更。"
+    discard-lore-3: "<red>所有放入的物品將會遺失！"
+    saved-chat: "<green>成功儲存了 {0} 個實體獎勵！"
+    discarded-chat: "<yellow>已放棄變更。正在返回主選單..."
+
+  command-editor:
+    title: "<gold>設定指令"
+    winner-name: "<green>獲勝指令"
+    start-name: "<yellow>啟動指令"
+    end-name: "<red>結束指令"
+    save-name: "<green>儲存指令"
+    back-name: "<red>返回建立選單"
+    hint-add: "<gray>右鍵點擊: <white>新增指令"
+    hint-clear: "<gray>左鍵點擊: <white>清除所有"
+    current-prefix: "<gray>目前 {0} 指令:"
+    type-winner: "獲勝"
+    type-start: "啟動"
+    type-end: "結束"
+    command-line: "<gray>- {0}"
+    no-commands: "<dark_gray>未設定任何指令"
+    chat-prompt: "<green>請在聊天欄輸入指令，或輸入 <red>'cancel'<green> 取消返回:"
+
+  scheduler:
+    title: "<gold>建立 KOTH 排程"
+    day-name: "<green>星期: <gray>{0}"
+    day-lore: "<dark_gray>點擊: <gray>下一天"
+    day-monday: "星期一"
+    day-tuesday: "星期二"
+    day-wednesday: "星期三"
+    day-thursday: "星期四"
+    day-friday: "星期五"
+    day-saturday: "星期六"
+    day-sunday: "星期日"
+    hour-name: "<yellow>小時: {0}"
+    hour-hint-add: "<dark_gray>右鍵點擊: <gray>增加 1 小時"
+    hour-hint-sub: "<dark_gray>左鍵點擊: <gray>減少 1 小時"
+    minute-name: "<aqua>分鐘: {0}"
+    minute-hint-add: "<dark_gray>右鍵點擊: <gray>增加 1 分鐘"
+    minute-hint-sub: "<dark_gray>左鍵點擊: <gray>減少 1 分鐘"
+    minute-hint-add-10: "<dark_gray>Shift + 右鍵: <gray>增加 10 分鐘"
+    minute-hint-sub-10: "<dark_gray>Shift + 左鍵: <gray>減少 10 分鐘"
+    back-name: "<red>返回建立選單"
+
 # 請勿更動此項！
 config-version: 1

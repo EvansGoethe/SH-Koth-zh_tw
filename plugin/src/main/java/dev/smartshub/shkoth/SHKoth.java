@@ -178,10 +178,10 @@ public class SHKoth extends JavaPlugin {
     public void guis() {
         kothToRegisterCache = new KothToRegisterCache();
 
-        addPhysicalRewardGui = new AddPhysicalRewardGui(kothToRegisterCache, messageParser);
-        createSchedulerGui = new CreateSchedulerGui(kothToRegisterCache, messageParser);
-        commandGui = new CommandGui(kothToRegisterCache, messageParser);
-        editKothListGui = new dev.smartshub.shkoth.gui.EditKothListGui(kothRegistry, kothToRegisterCache, messageParser);
+        addPhysicalRewardGui = new AddPhysicalRewardGui(kothToRegisterCache, messageParser, messageRepository);
+        createSchedulerGui = new CreateSchedulerGui(kothToRegisterCache, messageParser, messageRepository);
+        commandGui = new CommandGui(kothToRegisterCache, messageParser, messageRepository);
+        editKothListGui = new dev.smartshub.shkoth.gui.EditKothListGui(kothRegistry, kothToRegisterCache, messageParser, messageRepository);
 
         var sharedBoardPreview = new dev.smartshub.shkoth.service.gui.menu.other.KothLoreBoardPreview(
                 kothToRegisterCache, messageParser, messageRepository);
