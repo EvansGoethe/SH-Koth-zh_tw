@@ -35,6 +35,7 @@ import dev.smartshub.shkoth.service.gui.GuiService;
 import dev.smartshub.shkoth.service.gui.menu.cache.KothToRegisterCache;
 import dev.smartshub.shkoth.service.koth.KothRegistrationFromTempDataService;
 import dev.smartshub.shkoth.service.koth.RefreshInsideKothService;
+import dev.smartshub.shkoth.service.gui.input.AnvilTextInput;
 import dev.smartshub.shkoth.service.notify.NotifyService;
 import dev.smartshub.shkoth.service.reward.OfflineRewardStorage;
 import dev.smartshub.shkoth.service.schedule.KothScheduler;
@@ -157,6 +158,7 @@ public class SHKoth extends JavaPlugin {
     private void initServices() {
         notifyService = new NotifyService(messageParser, messageRepository);
         offlineRewardStorage = new OfflineRewardStorage(this);
+        new AnvilTextInput(this);
 
         sendScoreboardService = new SendScoreboardService(configService, messageParser);
         scoreboardHandleService = new ScoreboardHandleService(sendScoreboardService, kothRegistry);
@@ -181,7 +183,11 @@ public class SHKoth extends JavaPlugin {
         commandGui = new CommandGui(kothToRegisterCache, messageParser);
         createKothGui = new CreateKothGui(messageParser, kothToRegisterCache, wandService, kothRegistry);
         editKothListGui = new dev.smartshub.shkoth.gui.EditKothListGui(kothRegistry, kothToRegisterCache, messageParser);
-        guiService = new GuiService(createKothGui, createSchedulerGui, addPhysicalRewardGui, commandGui, editKothListGui);
+        var scoreboardLineEditorGui = new dev.smartshub.shkoth.gui.ScoreboardLineEditorGui(
+                messageParser, kothToRegisterCache,
+                new dev.smartshub.shkoth.service.gui.menu.other.KothLoreBoardPreview(kothToRegisterCache, messageParser));
+        guiService = new GuiService(createKothGui, createSchedulerGui, addPhysicalRewardGui, commandGui, editKothListGui, scoreboardLineEditorGui);
+        scoreboardLineEditorGui.setGuiService(guiService);
 
         kothToRegisterCache.setGuiService(guiService);
         createSchedulerGui.setGuiService(guiService);

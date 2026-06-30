@@ -136,6 +136,36 @@ public class KothTempData {
         scoreboardWaitingContent = new ArrayList<>(scoreboardWaitingContent);
     }
 
+    // ===== Index-based 計分板行操作（給 ScoreboardLineEditorGui 用）=====
+    public List<String> getLines(boolean capturing) {
+        return capturing ? scoreboardCapturingContent : scoreboardWaitingContent;
+    }
+
+    public void setLineAt(boolean capturing, int index, String text) {
+        List<String> list = getLines(capturing);
+        if (index < 0 || index >= list.size()) return;
+        list.set(index, text);
+    }
+
+    public void removeLineAt(boolean capturing, int index) {
+        List<String> list = getLines(capturing);
+        if (index < 0 || index >= list.size()) return;
+        list.remove(index);
+    }
+
+    public void insertLine(boolean capturing, int index, String text) {
+        List<String> list = getLines(capturing);
+        if (index < 0 || index > list.size()) return;
+        list.add(index, text);
+    }
+
+    public void moveLine(boolean capturing, int from, int to) {
+        List<String> list = getLines(capturing);
+        if (from < 0 || from >= list.size() || to < 0 || to >= list.size()) return;
+        String tmp = list.remove(from);
+        list.add(to, tmp);
+    }
+
     public void setTempDay(DayOfWeek day) {
         this.tempDay = day;
     }

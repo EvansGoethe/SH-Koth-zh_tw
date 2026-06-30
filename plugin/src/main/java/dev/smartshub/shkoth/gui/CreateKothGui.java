@@ -6,11 +6,11 @@ import dev.smartshub.shkoth.api.koth.guideline.NotifyType;
 import dev.smartshub.shkoth.message.MessageParser;
 import dev.smartshub.shkoth.registry.KothRegistry;
 import dev.smartshub.shkoth.service.gui.GuiService;
+import dev.smartshub.shkoth.service.gui.input.AnvilTextInput;
 import dev.smartshub.shkoth.service.gui.menu.cache.KothTempData;
 import dev.smartshub.shkoth.service.gui.menu.cache.KothToRegisterCache;
 import dev.smartshub.shkoth.service.gui.menu.cache.KothValidation;
 import dev.smartshub.shkoth.service.gui.menu.other.KothLoreBoardPreview;
-import dev.smartshub.shkoth.service.gui.menu.other.WaitingToFill;
 import dev.smartshub.shkoth.service.wand.WandService;
 import dev.triumphteam.gui.builder.item.ItemBuilder;
 import dev.triumphteam.gui.guis.Gui;
@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 /**
  * 分頁式 KOTH 建立/編輯 GUI。
@@ -110,7 +111,7 @@ public class CreateKothGui extends BaseUpdatableGui {
     @Override
     public void open(Player player) {
         cache.addKothToRegister(player.getUniqueId());
-        currentTab.put(player.getUniqueId(), TAB_BASIC);
+        currentTab.putIfAbsent(player.getUniqueId(), TAB_BASIC);
         Gui gui = buildGui(player);
         openGuis.put(player.getUniqueId(), gui);
         gui.open(player);
@@ -328,22 +329,47 @@ public class CreateKothGui extends BaseUpdatableGui {
     }
 
     // ===== 工廠：減少 boilerplate =====
-    private GuiItem chatPromptItem(Player player, Material mat, String name, String currentText,
-                                   boolean required, WaitingToFill flag, String prompt) {
+    /**
+     * 用 Anvil GUI 收集文字輸入，取代「關閉視窗→聊天輸入」流程。
+     * validator 回傳 null = 通過；否則為錯誤訊息（會顯示給玩家後重新開啟 anvil）。
+     */
+    private GuiItem promptItem(Player player, Material mat, String name, String currentText,
+                               boolean required, Consumer<String> setter,
+                               Function<String, String> validator) {
         boolean filled = currentText != null && !currentText.isBlank() && !"example".equals(currentText);
         List<String> lore = new ArrayList<>();
         lore.add("<dark_gray>目前: <gray>" + (filled ? currentText : "尚未設定"));
         if (required) lore.add(filled ? "<green>✓ 必填" : "<red>✗ 必填");
-        lore.add("<yellow>點擊以設定");
+        lore.add("<yellow>點擊以輸入 (Anvil)");
         return ItemBuilder.from(mat)
                 .name(parser.parse("<yellow>" + name))
                 .lore(parser.parseList(lore))
                 .asGuiItem(event -> {
                     event.setCancelled(true);
-                    player.closeInventory();
-                    cache.setWaitingToFill(player.getUniqueId(), flag);
-                    player.sendMessage(parser.parse("<green>" + prompt + "，或輸入 <red>'cancel'<green> 取消:"));
+                    openAnvilPrompt(player, currentText, setter, validator);
                 });
+    }
+
+    private void openAnvilPrompt(Player player, String initial,
+                                 Consumer<String> setter,
+                                 Function<String, String> validator) {
+        AnvilTextInput anvil = AnvilTextInput.get();
+        if (anvil == null) {
+            player.sendMessage(parser.parse("<red>Anvil 輸入系統未初始化"));
+            return;
+        }
+        anvil.prompt(player, initial == null ? "" : initial,
+                text -> {
+                    String err = validator == null ? null : validator.apply(text);
+                    if (err != null) {
+                        player.sendMessage(parser.parse("<red>" + err));
+                        openAnvilPrompt(player, text, setter, validator);
+                        return;
+                    }
+                    setter.accept(text);
+                    open(player);
+                },
+                () -> open(player));
     }
 
     private GuiItem numericItem(Player player, Material mat, String name, int value, String unit,
@@ -380,15 +406,22 @@ public class CreateKothGui extends BaseUpdatableGui {
     // ===== Tab 1: 基本資料 =====
     private GuiItem itemId(Player player, Gui gui) {
         var data = cache.getKothToRegister(player.getUniqueId());
-        return chatPromptItem(player, Material.BAMBOO_SIGN, "KOTH ID",
-                data.getId(), true, WaitingToFill.ID, "請在聊天欄輸入 KOTH ID");
+        return promptItem(player, Material.BAMBOO_SIGN, "KOTH ID",
+                data.getId(), true, data::setId,
+                text -> {
+                    if (text == null || text.isBlank()) return "ID 不可為空";
+                    if (!text.matches("^[A-Za-z0-9_-]+$")) return "ID 只能含英數字、_、-";
+                    var current = cache.getKothToRegister(player.getUniqueId()).getId();
+                    if (!text.equals(current) && kothRegistry.get(text) != null) return "ID 已存在";
+                    return null;
+                });
     }
 
     private GuiItem itemDisplayName(Player player, Gui gui) {
         var data = cache.getKothToRegister(player.getUniqueId());
-        return chatPromptItem(player, Material.CHERRY_SIGN, "顯示名稱",
-                data.getDisplayName(), true, WaitingToFill.DISPLAYNAME,
-                "請在聊天欄輸入顯示名稱（支援 MiniMessage）");
+        return promptItem(player, Material.CHERRY_SIGN, "顯示名稱",
+                data.getDisplayName(), true, data::setDisplayName,
+                text -> (text == null || text.isBlank()) ? "顯示名稱不可為空" : null);
     }
 
     private GuiItem itemWand(Player player, Gui gui) {
@@ -468,9 +501,10 @@ public class CreateKothGui extends BaseUpdatableGui {
 
     private GuiItem itemWaitingBoardTitle(Player player, Gui gui) {
         var data = cache.getKothToRegister(player.getUniqueId());
-        return chatPromptItem(player, Material.PAPER, "等待時計分板標題",
-                data.getScoreboardWaitingTitle(), false, WaitingToFill.BOARD_WAITING_TITLE,
-                "請在聊天欄輸入等待時計分板標題");
+        return promptItem(player, Material.PAPER, "等待時計分板標題",
+                data.getScoreboardWaitingTitle(), false,
+                t -> { data.setScoreboardWaitingTitle(t); boardPreview.invalidate(player.getUniqueId()); },
+                null);
     }
 
     private GuiItem itemWaitingBoardLines(Player player, Gui gui) {
@@ -479,15 +513,16 @@ public class CreateKothGui extends BaseUpdatableGui {
                 .lore(boardPreview.getWaitingLore(player.getUniqueId()))
                 .asGuiItem(event -> {
                     event.setCancelled(true);
-                    handleBoardLinesClick(event, player, false);
+                    if (guiService != null) guiService.openScoreboardLineEditor(player, false);
                 });
     }
 
     private GuiItem itemCapturingBoardTitle(Player player, Gui gui) {
         var data = cache.getKothToRegister(player.getUniqueId());
-        return chatPromptItem(player, Material.NAME_TAG, "佔領時計分板標題",
-                data.getScoreboardCapturingTitle(), false, WaitingToFill.BOARD_CAPTURING_TITLE,
-                "請在聊天欄輸入佔領時計分板標題");
+        return promptItem(player, Material.NAME_TAG, "佔領時計分板標題",
+                data.getScoreboardCapturingTitle(), false,
+                t -> { data.setScoreboardCapturingTitle(t); boardPreview.invalidate(player.getUniqueId()); },
+                null);
     }
 
     private GuiItem itemCapturingBoardLines(Player player, Gui gui) {
@@ -496,28 +531,8 @@ public class CreateKothGui extends BaseUpdatableGui {
                 .lore(boardPreview.getCapturingLore(player.getUniqueId()))
                 .asGuiItem(event -> {
                     event.setCancelled(true);
-                    handleBoardLinesClick(event, player, true);
+                    if (guiService != null) guiService.openScoreboardLineEditor(player, true);
                 });
-    }
-
-    private void handleBoardLinesClick(InventoryClickEvent event, Player player, boolean capturing) {
-        var data = cache.getKothToRegister(player.getUniqueId());
-        if (event.getClick().isRightClick() && !event.getClick().isShiftClick()) {
-            player.closeInventory();
-            cache.setWaitingToFill(player.getUniqueId(),
-                    capturing ? WaitingToFill.BOARD_CAPTURING_LINE : WaitingToFill.BOARD_WAITING_LINE);
-            player.sendMessage(parser.parse("<green>請在聊天欄輸入內容行，或輸入 <red>'cancel'<green> 取消:"));
-        } else if (event.getClick().isLeftClick() && !event.getClick().isShiftClick()) {
-            if (capturing) data.removeLastCapturingLine();
-            else data.removeLastWaitingLine();
-            boardPreview.invalidate(player.getUniqueId());
-            refreshActive(player);
-        } else if (event.getClick().isShiftClick()) {
-            if (capturing) data.clearCapturingLines();
-            else data.clearWaitingLines();
-            boardPreview.invalidate(player.getUniqueId());
-            refreshActive(player);
-        }
     }
 
     // ===== Tab 3: 獎勵與指令 =====
