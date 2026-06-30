@@ -36,6 +36,7 @@ public class Koth extends AbstractKoth {
     private final boolean isScoreboardEnabled;
     private final boolean denyEnterWithoutTeam;
     private final boolean createTeamIfNotExistsOnEnter;
+    private final KothType type;
 
     private KothTeam currentCapturingTeam;
     private long captureStartTime;
@@ -46,6 +47,7 @@ public class Koth extends AbstractKoth {
         super(id, displayName, duration, captureTime, area, commands, physicalRewards);
 
         this.teamTracker = teamTracker;
+        this.type = type;
         this.tally = TallyFactory.create(type, this);
         this.isBossbarEnabled = isBossbarEnabled;
         this.isSolo = isSolo;
@@ -53,6 +55,8 @@ public class Koth extends AbstractKoth {
         this.denyEnterWithoutTeam = denyEnterWithoutTeam;
         this.createTeamIfNotExistsOnEnter = createTeamIfNotExistsOnEnter;
     }
+
+    public KothType getType() { return type; }
 
     @Override
     public void start() {
@@ -253,5 +257,8 @@ public class Koth extends AbstractKoth {
     public boolean isScoreboardEnabled() { return isScoreboardEnabled; }
 
     @Override
-    public boolean isBossbarEnabled() { return isBossbarEnabled; }
+    public boolean isBossbarEnabled() {
+        return isBossbarEnabled
+                || getNotifyType().includes(dev.smartshub.shkoth.api.koth.guideline.NotifyChannel.BOSSBAR);
+    }
 }

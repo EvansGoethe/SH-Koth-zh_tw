@@ -3,16 +3,20 @@ package dev.smartshub.shkoth.service.reward;
 import dev.smartshub.shkoth.api.koth.Koth;
 import dev.smartshub.shkoth.api.reward.PhysicalReward;
 import org.bukkit.Bukkit;
+import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class GrantRewardsService {
-
 
     private final Koth koth;
 
@@ -27,32 +31,20 @@ public class GrantRewardsService {
             return;
         }
 
-        List<Player> onlineWinners = getOnlineWinners();
+        ThreadLocalRandom random = ThreadLocalRandom.current();
+        OfflineRewardStorage offlineStorage = OfflineRewardStorage.get();
 
-        if (onlineWinners.isEmpty()) {
-            return;
+        for (UUID winnerId : winners) {
+            ItemStack item = createItemStack(rewards.get(random.nextInt(rewards.size())));
+            Player online = Bukkit.getPlayer(winnerId);
+            if (online != null && online.isOnline()) {
+                grantToPlayer(online, item);
+            } else if (offlineStorage != null) {
+                offlineStorage.add(winnerId, item);
+            } else {
+                logger().warning("離線獎勵儲存未初始化，獎勵遺失 (winner=" + winnerId + ")");
+            }
         }
-
-        List<ItemStack> processedItems = prepareRewardItems();
-
-        for (Player player : onlineWinners) {
-            grantRewardsToPlayer(player, processedItems);
-        }
-    }
-
-    private List<Player> getOnlineWinners() {
-        Set<UUID> winners = koth.getWinners();
-        return winners.stream()
-                .map(Bukkit::getPlayer)
-                .filter(player -> player != null && player.isOnline())
-                .toList();
-    }
-
-    private List<ItemStack> prepareRewardItems() {
-        List<PhysicalReward> rewards = koth.getPhysicalRewards();
-        return rewards.stream()
-                .map(this::createItemStack)
-                .toList();
     }
 
     private ItemStack createItemStack(PhysicalReward reward) {
@@ -61,32 +53,33 @@ public class GrantRewardsService {
         return item;
     }
 
-    private void grantRewardsToPlayer(Player player, List<ItemStack> items) {
+    private void grantToPlayer(Player player, ItemStack item) {
         try {
-            for (ItemStack item : items) {
-                ItemStack playerItem = item.clone();
-                addItemToPlayerInventory(player, playerItem);
+            Map<Integer, ItemStack> leftover = player.getInventory().addItem(item.clone());
+            if (!leftover.isEmpty()) {
+                dropProtected(player, leftover);
             }
         } catch (Exception e) {
-            Bukkit.getLogger().severe( "Error granting rewards to player " + player.getName());
+            logger().log(Level.SEVERE, "發放獎勵給 " + player.getName() + " 失敗", e);
         }
     }
 
-    private void addItemToPlayerInventory(Player player, ItemStack item) {
-        Map<Integer, ItemStack> leftover = player.getInventory().addItem(item);
-
-        if (!leftover.isEmpty()) {
-            dropLeftoverItems(player, leftover);
-        }
-    }
-
-    private void dropLeftoverItems(Player player, Map<Integer, ItemStack> leftoverItems) {
+    private void dropProtected(Player player, Map<Integer, ItemStack> leftoverItems) {
         try {
             for (ItemStack leftoverItem : leftoverItems.values()) {
-                player.getWorld().dropItemNaturally(player.getLocation(), leftoverItem);
+                Item dropped = player.getWorld().dropItemNaturally(player.getLocation(), leftoverItem);
+                try {
+                    dropped.setOwner(player.getUniqueId());
+                } catch (Throwable ignored) {
+                    // 老版本沒有 setOwner，至少還是會掉在腳邊
+                }
             }
         } catch (Exception e) {
-            Bukkit.getLogger().severe("Failed to drop leftover items for player " + player.getName());
+            logger().log(Level.SEVERE, "掉落獎勵物品給 " + player.getName() + " 失敗", e);
         }
+    }
+
+    private Logger logger() {
+        return JavaPlugin.getProvidingPlugin(GrantRewardsService.class).getLogger();
     }
 }

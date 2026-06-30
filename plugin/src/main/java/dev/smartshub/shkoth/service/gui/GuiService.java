@@ -13,12 +13,14 @@ public class GuiService {
     private final CreateSchedulerGui createSchedulerGui;
     private final AddPhysicalRewardGui addPhysicalRewardGui;
     private final CommandGui commandGui;
+    private final dev.smartshub.shkoth.gui.EditKothListGui editKothListGui;
 
-    public GuiService(CreateKothGui createKothGui, CreateSchedulerGui createSchedulerGui, AddPhysicalRewardGui addPhysicalRewardGui, CommandGui commandGui){
+    public GuiService(CreateKothGui createKothGui, CreateSchedulerGui createSchedulerGui, AddPhysicalRewardGui addPhysicalRewardGui, CommandGui commandGui, dev.smartshub.shkoth.gui.EditKothListGui editKothListGui){
         this.createKothGui = createKothGui;
         this.createSchedulerGui = createSchedulerGui;
         this.addPhysicalRewardGui = addPhysicalRewardGui;
         this.commandGui = commandGui;
+        this.editKothListGui = editKothListGui;
     }
 
     public void openCreateKothGui(Player player) {
@@ -35,6 +37,12 @@ public class GuiService {
 
     public void openCommandGui(Player player) {
         commandGui.open(player);
+    }
+
+    public void openEditKothListGui(Player player) {
+        if (editKothListGui != null) {
+            editKothListGui.open(player);
+        }
     }
 
 }

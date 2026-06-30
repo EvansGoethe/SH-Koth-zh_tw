@@ -3,7 +3,9 @@ package dev.smartshub.shkoth.service.gui.menu.cache;
 import dev.smartshub.shkoth.api.koth.command.Commands;
 import dev.smartshub.shkoth.api.reward.PhysicalReward;
 import dev.smartshub.shkoth.service.config.ConfigService;
+import org.bukkit.Bukkit;
 import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
 import java.io.IOException;
@@ -11,6 +13,8 @@ import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.logging.Level;
 
 /*
  * The code is awful and needs to be refactored at some point.
@@ -24,17 +28,56 @@ public class KothYamlSaver {
         this.kothsFolderPath = kothsFolderPath;
     }
 
+    /**
+     * 編輯流程使用：在 main thread 先在記憶體組好 YAML，再 async 寫檔。
+     * 不關心 I/O 結果，只 log 失敗。
+     */
+    public CompletableFuture<Boolean> saveToYamlAsync(KothTempData tempData) {
+        try {
+            YamlConfiguration yaml = buildYaml(tempData);
+            File kothFile = resolveFile(tempData.getId());
+            return CompletableFuture.supplyAsync(() -> {
+                try {
+                    yaml.save(kothFile);
+                    return true;
+                } catch (IOException e) {
+                    JavaPlugin.getProvidingPlugin(KothYamlSaver.class).getLogger()
+                            .log(Level.SEVERE, "Async 儲存 KOTH 配置失敗 (" + tempData.getId() + ")", e);
+                    return false;
+                }
+            });
+        } catch (Exception e) {
+            JavaPlugin.getProvidingPlugin(KothYamlSaver.class).getLogger()
+                    .log(Level.SEVERE, "組裝 KOTH YAML 失敗 (" + tempData.getId() + ")", e);
+            return CompletableFuture.completedFuture(false);
+        }
+    }
+
     public boolean saveToYaml(KothTempData tempData) {
         try {
+            YamlConfiguration yaml = buildYaml(tempData);
+            File kothFile = resolveFile(tempData.getId());
+            yaml.save(kothFile);
+            return true;
+        } catch (IOException e) {
+            JavaPlugin.getProvidingPlugin(KothYamlSaver.class).getLogger()
+                    .log(Level.SEVERE, "儲存 KOTH 配置失敗 (" + tempData.getId() + ")", e);
+            return false;
+        } catch (Exception e) {
+            JavaPlugin.getProvidingPlugin(KothYamlSaver.class).getLogger()
+                    .log(Level.SEVERE, "組裝 KOTH YAML 失敗 (" + tempData.getId() + ")", e);
+            return false;
+        }
+    }
 
-            File kothFolder = new File(kothsFolderPath);
-            if (!kothFolder.exists()) {
-                boolean created = kothFolder.mkdirs();
-            }
+    private File resolveFile(String id) {
+        File kothFolder = new File(kothsFolderPath);
+        if (!kothFolder.exists()) kothFolder.mkdirs();
+        return new File(kothFolder, id + ".yml");
+    }
 
-            File kothFile = new File(kothFolder, tempData.getId() + ".yml");
-
-            YamlConfiguration yaml = new YamlConfiguration();
+    private YamlConfiguration buildYaml(KothTempData tempData) {
+        YamlConfiguration yaml = new YamlConfiguration();
 
             yaml.set("world", tempData.getWorldName());
             yaml.set("display-name", tempData.getDisplayName());
@@ -42,6 +85,7 @@ public class KothYamlSaver {
             yaml.set("max-duration", tempData.getMaxTime());
             yaml.set("capture-time", tempData.getCaptureTime());
             yaml.set("type", tempData.getType().name().toLowerCase());
+            yaml.set("notify-type", tempData.getNotifyType().name().toLowerCase());
             yaml.set("solo-koth", tempData.isSolo());
             yaml.set("create-team-if-not-exists", tempData.isCreateTeamIfNotExistsOnEnter());
             yaml.set("deny-entry-if-not-in-team", tempData.isDenyEnterWithoutTeam());
@@ -63,17 +107,7 @@ public class KothYamlSaver {
             savePhysicalRewards(yaml, tempData.getPhysicalRewards());
             saveScoreboard(yaml, tempData);
 
-            yaml.save(kothFile);
-
-            return true;
-
-        } catch (IOException e) {
-            e.printStackTrace();
-            return false;
-        } catch (Exception e) {
-            e.printStackTrace();
-            return false;
-        }
+            return yaml;
     }
 
     private void saveCommands(YamlConfiguration yaml, List<Commands> commandsList) {
@@ -109,6 +143,8 @@ public class KothYamlSaver {
 
     private Map<String, Object> convertPhysicalRewardToMap(PhysicalReward reward) {
         Map<String, Object> rewardMap = new HashMap<>();
+        rewardMap.put("amount", reward.amount());
+        rewardMap.put("item", com.saicone.rtag.item.ItemTagStream.INSTANCE.toBase64(new org.bukkit.inventory.ItemStack[]{reward.item()}));
         return rewardMap;
     }
 

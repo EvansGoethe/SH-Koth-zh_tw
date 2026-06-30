@@ -2,6 +2,7 @@ package dev.smartshub.shkoth.service.gui.menu.cache;
 
 import dev.smartshub.shkoth.api.koth.command.Commands;
 import dev.smartshub.shkoth.api.koth.guideline.KothType;
+import dev.smartshub.shkoth.api.koth.guideline.NotifyType;
 import dev.smartshub.shkoth.api.location.Area;
 import dev.smartshub.shkoth.api.location.Corner;
 import dev.smartshub.shkoth.api.reward.PhysicalReward;
@@ -37,6 +38,7 @@ public class KothTempData {
     private Corner corner2 = null;
     private String worldName = null;
     private KothType type = KothType.CAPTURE;
+    private NotifyType notifyType = NotifyType.ALL;
     private boolean isSolo = true;
     private boolean isBossbarEnabled = true;
     private boolean denyEnterWithoutTeam = false;
@@ -424,7 +426,37 @@ public class KothTempData {
         return creatorUUID;
     }
 
+    public void loadFromKoth(dev.smartshub.shkoth.koth.Koth koth) {
+        this.setId(koth.getId());
+        this.setDisplayName(koth.getDisplayName());
+        this.setMaxTime(koth.getDuration());
+        this.setCaptureTime(koth.getCaptureTime());
+        this.setArea(koth.getArea());
+        if (koth.getArea() != null) {
+            this.setCorner1(koth.getArea().corner1());
+            this.setCorner2(koth.getArea().corner2());
+            this.setWorldName(koth.getArea().worldName());
+        }
+        this.setType(koth.getType());
+        this.setSolo(koth.isSolo());
+        this.setBossbarEnabled(koth.isBossbarEnabled());
+        this.setDenyEnterWithoutTeam(koth.isDenyEnterWithoutTeam());
+        this.setCreateTeamIfNotExistsOnEnter(koth.isCreateTeamIfNotExistsOnEnter());
+        this.setPhysicalRewards(new java.util.ArrayList<>(koth.getPhysicalRewards()));
+        this.setCommands(koth.getCommands());
+        this.setNotifyType(koth.getNotifyType());
+        this.setScoreboardEnabled(koth.isScoreboardEnabled());
+    }
+
     public boolean isWaitingToChat() {
         return waitingToChat;
+    }
+
+    public NotifyType getNotifyType() {
+        return notifyType != null ? notifyType : NotifyType.ALL;
+    }
+
+    public void setNotifyType(NotifyType notifyType) {
+        this.notifyType = notifyType;
     }
 }
