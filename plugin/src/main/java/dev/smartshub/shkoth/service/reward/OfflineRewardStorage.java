@@ -147,6 +147,8 @@ public class OfflineRewardStorage {
                 }
             }
         }
-        player.sendMessage("§a你領取了 " + items.size() + " 件 KOTH 離線獎勵！");
+        // Localised message — keep a safe fallback that avoids depending on MessageRepository here
+        // (this class is constructed before services are wired). The fallback is English.
+        player.sendMessage("§aYou received " + items.size() + " pending KOTH reward(s)!");
     }
 }

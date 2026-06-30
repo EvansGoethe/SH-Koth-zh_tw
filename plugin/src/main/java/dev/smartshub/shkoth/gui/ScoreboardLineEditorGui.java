@@ -1,6 +1,7 @@
 package dev.smartshub.shkoth.gui;
 
 import dev.smartshub.shkoth.message.MessageParser;
+import dev.smartshub.shkoth.message.MessageRepository;
 import dev.smartshub.shkoth.service.gui.GuiService;
 import dev.smartshub.shkoth.service.gui.input.AnvilTextInput;
 import dev.smartshub.shkoth.service.gui.menu.cache.KothTempData;
@@ -18,12 +19,10 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * 計分板每行內容編輯器。
- *
- * 一個 6 列 GUI：
- *   - row 0：返回 / 標題說明 / 新增一行 / 清空
- *   - row 1-4：每列代表一行，含 編輯／上移／下移／刪除 按鈕（4 列最多 36 行；超出走分頁）
- *   - row 5：上一頁 / 頁碼 / 下一頁 / 返回 CreateKothGui
+ * Per-line editor for the capturing / waiting scoreboard line lists.
+ * 6-row paginated view: header (back / info / add / clear),
+ * 4 rows of line entries (number, text x5, up, down, delete), footer (prev / page / next).
+ * Add and edit both go through {@link AnvilTextInput}.
  */
 public class ScoreboardLineEditorGui {
 
@@ -41,18 +40,19 @@ public class ScoreboardLineEditorGui {
     private static final int SLOT_NEXT = 53;
 
     private final MessageParser parser;
+    private final MessageRepository msg;
     private final KothToRegisterCache cache;
     private final KothLoreBoardPreview boardPreview;
 
     private GuiService guiService;
 
-    // 每個玩家當前編輯哪一組（capturing/waiting）跟頁碼
     private final Map<UUID, Boolean> editingCapturing = new HashMap<>();
     private final Map<UUID, Integer> currentPage = new HashMap<>();
 
-    public ScoreboardLineEditorGui(MessageParser parser, KothToRegisterCache cache,
-                                   KothLoreBoardPreview boardPreview) {
+    public ScoreboardLineEditorGui(MessageParser parser, MessageRepository msg,
+                                   KothToRegisterCache cache, KothLoreBoardPreview boardPreview) {
         this.parser = parser;
+        this.msg = msg;
         this.cache = cache;
         this.boardPreview = boardPreview;
     }
@@ -78,14 +78,15 @@ public class ScoreboardLineEditorGui {
         int page = clampPage(player, lines.size());
 
         Gui gui = Gui.gui()
-                .title(parser.parse("<gold>" + (capturing ? "佔領時" : "等待時") + "計分板內容"))
+                .title(parser.parse(msg.getMessage(capturing
+                        ? "gui.scoreboard-editor.title-capturing"
+                        : "gui.scoreboard-editor.title-waiting")))
                 .rows(6)
                 .create();
 
-        // === Header ===
         gui.setItem(SLOT_BACK, ItemBuilder.from(Material.ARROW)
-                .name(parser.parse("<yellow>返回"))
-                .lore(parser.parse("<gray>回到 KOTH 編輯介面"))
+                .name(parser.parse(msg.getMessage("gui.scoreboard-editor.back-name")))
+                .lore(parser.parse(msg.getMessage("gui.scoreboard-editor.back-lore")))
                 .asGuiItem(e -> {
                     e.setCancelled(true);
                     boardPreview.invalidate(player.getUniqueId());
@@ -93,24 +94,26 @@ public class ScoreboardLineEditorGui {
                 }));
 
         gui.setItem(SLOT_TITLE, ItemBuilder.from(Material.PAPER)
-                .name(parser.parse("<aqua>" + (capturing ? "佔領時" : "等待時") + "計分板"))
+                .name(parser.parse(msg.getMessage(capturing
+                        ? "gui.scoreboard-editor.info-name-capturing"
+                        : "gui.scoreboard-editor.info-name-waiting")))
                 .lore(parser.parseList(List.of(
-                        "<gray>共 <yellow>" + lines.size() + " <gray>行",
-                        "<dark_gray>左鍵編輯 / 右鍵刪除",
-                        "<dark_gray>Shift+左鍵 上移 / Shift+右鍵 下移")))
+                        msg.fmt("gui.scoreboard-editor.info-lore-1", lines.size()),
+                        msg.getMessage("gui.scoreboard-editor.info-lore-2"),
+                        msg.getMessage("gui.scoreboard-editor.info-lore-3"))))
                 .asGuiItem(e -> e.setCancelled(true)));
 
         gui.setItem(SLOT_ADD, ItemBuilder.from(Material.EMERALD)
-                .name(parser.parse("<green>新增一行"))
-                .lore(parser.parse("<gray>用 Anvil 輸入文字"))
+                .name(parser.parse(msg.getMessage("gui.scoreboard-editor.add-name")))
+                .lore(parser.parse(msg.getMessage("gui.scoreboard-editor.add-lore")))
                 .asGuiItem(e -> {
                     e.setCancelled(true);
                     openAnvilForNewLine(player, capturing);
                 }));
 
         gui.setItem(SLOT_CLEAR, ItemBuilder.from(Material.BARRIER)
-                .name(parser.parse("<red>清空所有行"))
-                .lore(parser.parse("<dark_red>不可復原"))
+                .name(parser.parse(msg.getMessage("gui.scoreboard-editor.clear-name")))
+                .lore(parser.parse(msg.getMessage("gui.scoreboard-editor.clear-lore")))
                 .asGuiItem(e -> {
                     e.setCancelled(true);
                     if (capturing) data.clearCapturingLines();
@@ -119,7 +122,6 @@ public class ScoreboardLineEditorGui {
                     render(player);
                 }));
 
-        // === Content rows ===
         int firstIdx = page * LINES_PER_PAGE;
         for (int row = 0; row < LINES_PER_PAGE; row++) {
             int idx = firstIdx + row;
@@ -131,10 +133,11 @@ public class ScoreboardLineEditorGui {
             }
         }
 
-        // === Footer pagination ===
         int totalPages = Math.max(1, (lines.size() + LINES_PER_PAGE - 1) / LINES_PER_PAGE);
         gui.setItem(SLOT_PREV, ItemBuilder.from(page > 0 ? Material.SPECTRAL_ARROW : Material.GRAY_DYE)
-                .name(parser.parse(page > 0 ? "<yellow>上一頁" : "<dark_gray>上一頁"))
+                .name(parser.parse(msg.getMessage(page > 0
+                        ? "gui.scoreboard-editor.prev-page-on"
+                        : "gui.scoreboard-editor.prev-page-off")))
                 .asGuiItem(e -> {
                     e.setCancelled(true);
                     if (page > 0) {
@@ -144,11 +147,13 @@ public class ScoreboardLineEditorGui {
                 }));
 
         gui.setItem(SLOT_PAGE_INFO, ItemBuilder.from(Material.BOOK)
-                .name(parser.parse("<aqua>第 " + (page + 1) + " / " + totalPages + " 頁"))
+                .name(parser.parse(msg.fmt("gui.scoreboard-editor.page-info", page + 1, totalPages)))
                 .asGuiItem(e -> e.setCancelled(true)));
 
         gui.setItem(SLOT_NEXT, ItemBuilder.from(page < totalPages - 1 ? Material.SPECTRAL_ARROW : Material.GRAY_DYE)
-                .name(parser.parse(page < totalPages - 1 ? "<yellow>下一頁" : "<dark_gray>下一頁"))
+                .name(parser.parse(msg.getMessage(page < totalPages - 1
+                        ? "gui.scoreboard-editor.next-page-on"
+                        : "gui.scoreboard-editor.next-page-off")))
                 .asGuiItem(e -> {
                     e.setCancelled(true);
                     if (page < totalPages - 1) {
@@ -157,32 +162,29 @@ public class ScoreboardLineEditorGui {
                     }
                 }));
 
-        // Fill remaining
         GuiItem filler = ItemBuilder.from(Material.BLACK_STAINED_GLASS_PANE)
                 .name(parser.parse(" "))
                 .asGuiItem(e -> e.setCancelled(true));
-        for (int s = 45; s < 54; s++) {
-            if (gui.getGuiItem(s) == null) gui.setItem(s, filler);
-        }
-        for (int s = 0; s < 9; s++) {
-            if (gui.getGuiItem(s) == null) gui.setItem(s, filler);
-        }
+        for (int s = 45; s < 54; s++) if (gui.getGuiItem(s) == null) gui.setItem(s, filler);
+        for (int s = 0; s < 9; s++) if (gui.getGuiItem(s) == null) gui.setItem(s, filler);
 
         gui.open(player);
     }
 
     private void placeLineRow(Gui gui, Player player, boolean capturing, String text, int idx, int baseSlot) {
-        // baseSlot = 該列的第 0 格 (0/9/18/27/36/45)
-        // 排版：[編號] [文字 ×5] [上移] [下移] [刪除]
         gui.setItem(baseSlot, ItemBuilder.from(Material.NAME_TAG)
-                .name(parser.parse("<gold>#" + (idx + 1)))
+                .name(parser.parse(msg.fmt("gui.scoreboard-editor.line-number", idx + 1)))
                 .asGuiItem(e -> e.setCancelled(true)));
 
+        String displayText = (text == null || text.isEmpty())
+                ? msg.getMessage("gui.scoreboard-editor.line-empty")
+                : text;
+
         GuiItem textItem = ItemBuilder.from(Material.PAPER)
-                .name(parser.parse("<white>" + (text == null || text.isEmpty() ? "(空)" : text)))
+                .name(parser.parse(msg.fmt("gui.scoreboard-editor.line-text", displayText)))
                 .lore(parser.parseList(List.of(
-                        "<dark_gray>左鍵 <gray>編輯",
-                        "<dark_gray>右鍵 <gray>刪除此行")))
+                        msg.getMessage("gui.scoreboard-editor.line-action-1"),
+                        msg.getMessage("gui.scoreboard-editor.line-action-2"))))
                 .asGuiItem(e -> {
                     e.setCancelled(true);
                     if (e.getClick().isShiftClick()) {
@@ -197,21 +199,21 @@ public class ScoreboardLineEditorGui {
         for (int i = 1; i <= 5; i++) gui.setItem(baseSlot + i, textItem);
 
         gui.setItem(baseSlot + 6, ItemBuilder.from(Material.ARROW)
-                .name(parser.parse("<yellow>↑ 上移"))
+                .name(parser.parse(msg.getMessage("gui.scoreboard-editor.move-up")))
                 .asGuiItem(e -> {
                     e.setCancelled(true);
                     moveUp(player, capturing, idx);
                 }));
 
         gui.setItem(baseSlot + 7, ItemBuilder.from(Material.ARROW)
-                .name(parser.parse("<yellow>↓ 下移"))
+                .name(parser.parse(msg.getMessage("gui.scoreboard-editor.move-down")))
                 .asGuiItem(e -> {
                     e.setCancelled(true);
                     moveDown(player, capturing, idx);
                 }));
 
         gui.setItem(baseSlot + 8, ItemBuilder.from(Material.LAVA_BUCKET)
-                .name(parser.parse("<red>刪除"))
+                .name(parser.parse(msg.getMessage("gui.scoreboard-editor.delete")))
                 .asGuiItem(e -> {
                     e.setCancelled(true);
                     deleteLine(player, capturing, idx);

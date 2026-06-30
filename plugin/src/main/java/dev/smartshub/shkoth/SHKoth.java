@@ -181,11 +181,14 @@ public class SHKoth extends JavaPlugin {
         addPhysicalRewardGui = new AddPhysicalRewardGui(kothToRegisterCache, messageParser);
         createSchedulerGui = new CreateSchedulerGui(kothToRegisterCache, messageParser);
         commandGui = new CommandGui(kothToRegisterCache, messageParser);
-        createKothGui = new CreateKothGui(messageParser, kothToRegisterCache, wandService, kothRegistry);
         editKothListGui = new dev.smartshub.shkoth.gui.EditKothListGui(kothRegistry, kothToRegisterCache, messageParser);
+
+        var sharedBoardPreview = new dev.smartshub.shkoth.service.gui.menu.other.KothLoreBoardPreview(
+                kothToRegisterCache, messageParser, messageRepository);
         var scoreboardLineEditorGui = new dev.smartshub.shkoth.gui.ScoreboardLineEditorGui(
-                messageParser, kothToRegisterCache,
-                new dev.smartshub.shkoth.service.gui.menu.other.KothLoreBoardPreview(kothToRegisterCache, messageParser));
+                messageParser, messageRepository, kothToRegisterCache, sharedBoardPreview);
+        createKothGui = new CreateKothGui(messageParser, messageRepository, kothToRegisterCache,
+                wandService, kothRegistry, sharedBoardPreview);
         guiService = new GuiService(createKothGui, createSchedulerGui, addPhysicalRewardGui, commandGui, editKothListGui, scoreboardLineEditorGui);
         scoreboardLineEditorGui.setGuiService(guiService);
 

@@ -4,11 +4,10 @@ import dev.smartshub.shkoth.api.gui.BaseUpdatableGui;
 import dev.smartshub.shkoth.api.koth.guideline.KothType;
 import dev.smartshub.shkoth.api.koth.guideline.NotifyType;
 import dev.smartshub.shkoth.message.MessageParser;
+import dev.smartshub.shkoth.message.MessageRepository;
 import dev.smartshub.shkoth.registry.KothRegistry;
 import dev.smartshub.shkoth.service.gui.GuiService;
 import dev.smartshub.shkoth.service.gui.input.AnvilTextInput;
-import dev.smartshub.shkoth.service.gui.menu.cache.KothTempData;
-import dev.smartshub.shkoth.service.gui.menu.cache.KothToRegisterCache;
 import dev.smartshub.shkoth.service.gui.menu.cache.KothValidation;
 import dev.smartshub.shkoth.service.gui.menu.other.KothLoreBoardPreview;
 import dev.smartshub.shkoth.service.wand.WandService;
@@ -30,30 +29,30 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 /**
- * 分頁式 KOTH 建立/編輯 GUI。
- * 共 6 列 54 格：
- *   row 0  (0-8)   ：分頁切換 + 取消
- *   row 1-4 (9-44) ：當前分頁的內容（每頁配置不同）
- *   row 5  (45-53) ：底排動作鈕（測試／複製／驗證資訊／儲存）
+ * Tabbed KOTH creation/editing GUI.
+ * 6 rows × 9 columns = 54 slots:
+ *   row 0  (0-8)   : tab bar + close
+ *   row 1-4 (9-44) : content of the active tab
+ *   row 5  (45-53) : footer actions (test / copy / validation / save)
  *
- * 編輯模式偵測：若 tempData 的 id 已存在於 KothRegistry，視為編輯既有 KOTH。
+ * Edit-mode detection: if the temp data's id is already in the KothRegistry,
+ * we treat the session as editing an existing KOTH.
+ *
+ * All user-facing strings are looked up through {@link MessageRepository}.
  */
 public class CreateKothGui extends BaseUpdatableGui {
 
-    // ===== Slot 常數（取代魔數）=====
     private static final int SLOT_TAB_BASIC = 1;
     private static final int SLOT_TAB_TIME = 3;
     private static final int SLOT_TAB_REWARD = 5;
     private static final int SLOT_CLOSE = 8;
 
-    // Tab 1 - 基本資料
     private static final int SLOT_B_ID = 20;
     private static final int SLOT_B_NAME = 22;
     private static final int SLOT_B_WAND = 24;
     private static final int SLOT_B_TYPE = 30;
     private static final int SLOT_B_NOTIFY = 32;
 
-    // Tab 2 - 時間與規則 / 計分板
     private static final int SLOT_T_MAX = 19;
     private static final int SLOT_T_CAP = 21;
     private static final int SLOT_T_BOSS = 23;
@@ -63,12 +62,10 @@ public class CreateKothGui extends BaseUpdatableGui {
     private static final int SLOT_T_CAP_TITLE = 32;
     private static final int SLOT_T_CAP_LINES = 34;
 
-    // Tab 3 - 獎勵與指令
     private static final int SLOT_R_REWARDS = 20;
     private static final int SLOT_R_POOL_INFO = 22;
     private static final int SLOT_R_COMMANDS = 24;
 
-    // Footer
     private static final int SLOT_F_TEST = 47;
     private static final int SLOT_F_COPY = 49;
     private static final int SLOT_F_VALIDATION = 51;
@@ -84,7 +81,8 @@ public class CreateKothGui extends BaseUpdatableGui {
     private static final int TAB_REWARD = 2;
 
     private final MessageParser parser;
-    private final KothToRegisterCache cache;
+    private final MessageRepository msg;
+    private final dev.smartshub.shkoth.service.gui.menu.cache.KothToRegisterCache cache;
     private final KothLoreBoardPreview boardPreview;
     private final WandService wandService;
     private final KothRegistry kothRegistry;
@@ -94,14 +92,17 @@ public class CreateKothGui extends BaseUpdatableGui {
     private final Map<UUID, Gui> openGuis = new HashMap<>();
 
     public CreateKothGui(MessageParser parser,
-                         KothToRegisterCache cache,
+                         MessageRepository msg,
+                         dev.smartshub.shkoth.service.gui.menu.cache.KothToRegisterCache cache,
                          WandService wandService,
-                         KothRegistry kothRegistry) {
+                         KothRegistry kothRegistry,
+                         KothLoreBoardPreview boardPreview) {
         this.parser = parser;
+        this.msg = msg;
         this.cache = cache;
         this.wandService = wandService;
         this.kothRegistry = kothRegistry;
-        this.boardPreview = new KothLoreBoardPreview(cache, parser);
+        this.boardPreview = boardPreview;
     }
 
     public void setGuiService(GuiService guiService) {
@@ -119,13 +120,15 @@ public class CreateKothGui extends BaseUpdatableGui {
 
     @Override
     protected void registerAllUpdaters() {
-        // 此 GUI 採分頁，updater 是每次切頁時動態註冊；這裡留空。
+        // tabbed; per-tab updaters are registered dynamically each render
     }
 
     private Gui buildGui(Player player) {
         boolean editing = isEditingExisting(player);
         Gui gui = Gui.gui()
-                .title(parser.parse(editing ? "<gold>編輯 KOTH" : "<gold>建立 KOTH"))
+                .title(parser.parse(msg.getMessage(editing
+                        ? "gui.create-koth.title-edit"
+                        : "gui.create-koth.title-new")))
                 .rows(6)
                 .create();
 
@@ -150,23 +153,28 @@ public class CreateKothGui extends BaseUpdatableGui {
 
     // ===== Tab bar =====
     private void registerTabBar() {
-        registerItemUpdater(SLOT_TAB_BASIC, (p, g) -> tabButton(p, "基本資料", Material.WRITABLE_BOOK, TAB_BASIC));
-        registerItemUpdater(SLOT_TAB_TIME, (p, g) -> tabButton(p, "時間與計分", Material.CLOCK, TAB_TIME));
-        registerItemUpdater(SLOT_TAB_REWARD, (p, g) -> tabButton(p, "獎勵與指令", Material.CHEST, TAB_REWARD));
+        registerItemUpdater(SLOT_TAB_BASIC, (p, g) -> tabButton(p, "gui.create-koth.tab-basic", Material.WRITABLE_BOOK, TAB_BASIC));
+        registerItemUpdater(SLOT_TAB_TIME, (p, g) -> tabButton(p, "gui.create-koth.tab-time", Material.CLOCK, TAB_TIME));
+        registerItemUpdater(SLOT_TAB_REWARD, (p, g) -> tabButton(p, "gui.create-koth.tab-reward", Material.CHEST, TAB_REWARD));
         registerItemUpdater(SLOT_CLOSE, (p, g) -> ItemBuilder.from(Material.BARRIER)
-                .name(parser.parse("<red>關閉視窗"))
-                .lore(parser.parse("<gray>會保留目前未儲存的編輯狀態"))
+                .name(parser.parse(msg.getMessage("gui.create-koth.close-name")))
+                .lore(parser.parse(msg.getMessage("gui.create-koth.close-lore")))
                 .asGuiItem(event -> {
                     event.setCancelled(true);
                     p.closeInventory();
                 }));
     }
 
-    private GuiItem tabButton(Player player, String label, Material mat, int tab) {
+    private GuiItem tabButton(Player player, String labelKey, Material mat, int tab) {
         boolean active = currentTab.getOrDefault(player.getUniqueId(), TAB_BASIC) == tab;
+        String marker = msg.getMessage(active
+                ? "gui.create-koth.tab-active-marker"
+                : "gui.create-koth.tab-inactive-marker");
         ItemBuilder b = ItemBuilder.from(active ? Material.LIME_STAINED_GLASS_PANE : mat)
-                .name(parser.parse((active ? "<green>▶ " : "<yellow>") + label))
-                .lore(parser.parse(active ? "<dark_gray>目前分頁" : "<gray>點擊切換"));
+                .name(parser.parse(marker + msg.getMessage(labelKey)))
+                .lore(parser.parse(msg.getMessage(active
+                        ? "gui.create-koth.tab-current-lore"
+                        : "gui.create-koth.tab-switch-lore")));
         if (active) b.glow();
         return b.asGuiItem(event -> {
             event.setCancelled(true);
@@ -187,37 +195,35 @@ public class CreateKothGui extends BaseUpdatableGui {
         var v = cache.validateKoth(player.getUniqueId());
         boolean ok = v.valid();
         return ItemBuilder.from(ok ? Material.FIREWORK_ROCKET : Material.GRAY_DYE)
-                .name(parser.parse(ok ? "<aqua>測試此 KOTH" : "<dark_gray>測試此 KOTH"))
-                .lore(parser.parse(ok
-                        ? "<gray>立刻啟動一回合驗證設定"
-                        : "<red>必填欄位齊全後才能測試"))
+                .name(parser.parse(msg.getMessage(ok ? "gui.create-koth.test-on-name" : "gui.create-koth.test-off-name")))
+                .lore(parser.parse(msg.getMessage(ok ? "gui.create-koth.test-on-lore" : "gui.create-koth.test-off-lore")))
                 .asGuiItem(event -> {
                     event.setCancelled(true);
                     if (!ok) return;
                     var tempId = cache.getKothToRegister(player.getUniqueId()).getId();
                     var koth = kothRegistry.get(tempId);
                     if (koth == null) {
-                        player.sendMessage(parser.parse("<red>請先儲存 KOTH 再測試！"));
+                        player.sendMessage(parser.parse(msg.getMessage("gui.create-koth.chat-test-need-save")));
                         return;
                     }
                     try {
                         koth.start();
-                        player.sendMessage(parser.parse("<green>已啟動 " + tempId));
+                        player.sendMessage(parser.parse(msg.fmt("gui.create-koth.chat-test-started", tempId)));
                         player.closeInventory();
                     } catch (Throwable t) {
-                        player.sendMessage(parser.parse("<red>啟動失敗：" + t.getMessage()));
+                        player.sendMessage(parser.parse(msg.fmt("gui.create-koth.chat-test-failed", t.getMessage())));
                     }
                 });
     }
 
     private GuiItem footerCopyButton(Player player, Gui gui) {
         boolean hasOthers = !kothRegistry.getAll().isEmpty();
+        List<String> lore = hasOthers
+                ? List.of(msg.getMessage("gui.create-koth.copy-on-lore-1"), msg.getMessage("gui.create-koth.copy-on-lore-2"))
+                : List.of(msg.getMessage("gui.create-koth.copy-off-lore-1"), msg.getMessage("gui.create-koth.copy-off-lore-2"));
         return ItemBuilder.from(hasOthers ? Material.WRITTEN_BOOK : Material.GRAY_DYE)
-                .name(parser.parse(hasOthers ? "<yellow>複製其他 KOTH 設定" : "<dark_gray>複製其他 KOTH 設定"))
-                .lore(parser.parseList(List.of(
-                        "<gray>從現有 KOTH 載入欄位",
-                        hasOthers ? "<dark_gray>點擊開啟列表" : "<red>目前沒有其他 KOTH 可複製"
-                )))
+                .name(parser.parse(msg.getMessage(hasOthers ? "gui.create-koth.copy-on-name" : "gui.create-koth.copy-off-name")))
+                .lore(parser.parseList(lore))
                 .asGuiItem(event -> {
                     event.setCancelled(true);
                     if (!hasOthers) return;
@@ -232,21 +238,22 @@ public class CreateKothGui extends BaseUpdatableGui {
         KothValidation.ValidationResult result = cache.validateKoth(player.getUniqueId());
         List<String> lore = new ArrayList<>();
         if (result.valid()) {
-            lore.add("<green>✓ 所有必填欄位齊全");
+            lore.add(msg.getMessage("gui.create-koth.validation-ok-line"));
         } else {
-            lore.add("<red>缺少 " + result.errors().size() + " 項：");
+            lore.add(msg.fmt("gui.create-koth.validation-fail-line", result.errors().size()));
             for (String err : result.errors()) {
-                lore.add("<red> - " + translateError(err));
+                lore.add(msg.fmt("gui.create-koth.validation-fail-item", translateError(err)));
             }
         }
-        // 額外提示：捕獲時間不可大於最長時間
         var data = cache.getKothToRegister(player.getUniqueId());
         if (data != null && data.getCaptureTime() > data.getMaxTime()) {
-            lore.add("<red>✗ 佔領時間 " + data.getCaptureTime()
-                    + " 秒 > 最長時間 " + data.getMaxTime() + " 秒");
+            lore.add(msg.fmt("gui.create-koth.validation-capture-exceeds",
+                    data.getCaptureTime(), data.getMaxTime()));
         }
         return ItemBuilder.from(result.valid() ? Material.LIME_CONCRETE : Material.RED_CONCRETE)
-                .name(parser.parse(result.valid() ? "<green>驗證通過" : "<red>尚未通過驗證"))
+                .name(parser.parse(msg.getMessage(result.valid()
+                        ? "gui.create-koth.validation-ok-name"
+                        : "gui.create-koth.validation-fail-name")))
                 .lore(parser.parseList(lore))
                 .asGuiItem(event -> event.setCancelled(true));
     }
@@ -261,13 +268,18 @@ public class CreateKothGui extends BaseUpdatableGui {
 
         Material mat = !canSave ? Material.GRAY_DYE
                 : (editing ? Material.ANVIL : Material.SLIME_BALL);
-        String name = editing ? "<green>儲存變更" : "<green>建立 KOTH";
+        String name = msg.getMessage(editing
+                ? "gui.create-koth.save-edit-name"
+                : "gui.create-koth.save-create-name");
 
         List<String> lore = new ArrayList<>();
-        lore.add(canSave ? "<gray>點擊以" + (editing ? "儲存" : "建立")
-                : "<red>條件未達成，無法儲存");
-        if (idClash) lore.add("<red>✗ ID 已存在");
-        if (!captureValid) lore.add("<red>✗ 佔領時間超過最長活動時間");
+        if (canSave) {
+            lore.add(msg.getMessage(editing ? "gui.create-koth.save-edit-lore" : "gui.create-koth.save-create-lore"));
+        } else {
+            lore.add(msg.getMessage("gui.create-koth.save-disabled-lore"));
+        }
+        if (idClash) lore.add(msg.getMessage("gui.create-koth.save-disabled-id-clash"));
+        if (!captureValid) lore.add(msg.getMessage("gui.create-koth.save-disabled-capture-exceeds"));
 
         ItemBuilder b = ItemBuilder.from(mat).name(parser.parse(name)).lore(parser.parseList(lore));
         if (canSave) b.glow();
@@ -275,11 +287,10 @@ public class CreateKothGui extends BaseUpdatableGui {
         return b.asGuiItem(event -> {
             event.setCancelled(true);
             if (!canSave) {
-                player.sendMessage(parser.parse("<red>請先解決驗證提示中的問題！"));
+                player.sendMessage(parser.parse(msg.getMessage("gui.create-koth.chat-save-fail")));
                 return;
             }
             player.closeInventory();
-            // 編輯模式：先取消註冊舊 KOTH，讓 registrationService 重新註冊新版本
             if (editing) {
                 kothRegistry.unregister(data.getId());
             }
@@ -287,9 +298,9 @@ public class CreateKothGui extends BaseUpdatableGui {
             cache.removeKothToRegister(player.getUniqueId());
             currentTab.remove(player.getUniqueId());
             openGuis.remove(player.getUniqueId());
-            player.sendMessage(parser.parse(editing
-                    ? "<green>已儲存 KOTH 變更！"
-                    : "<green>您已成功建立 KOTH！"));
+            player.sendMessage(parser.parse(msg.getMessage(editing
+                    ? "gui.create-koth.chat-save-edited"
+                    : "gui.create-koth.chat-save-created")));
         });
     }
 
@@ -328,21 +339,17 @@ public class CreateKothGui extends BaseUpdatableGui {
         registerItemUpdater(SLOT_R_COMMANDS, this::itemCommands);
     }
 
-    // ===== 工廠：減少 boilerplate =====
-    /**
-     * 用 Anvil GUI 收集文字輸入，取代「關閉視窗→聊天輸入」流程。
-     * validator 回傳 null = 通過；否則為錯誤訊息（會顯示給玩家後重新開啟 anvil）。
-     */
-    private GuiItem promptItem(Player player, Material mat, String name, String currentText,
+    // ===== Factories =====
+    private GuiItem promptItem(Player player, Material mat, String nameKey, String currentText,
                                boolean required, Consumer<String> setter,
                                Function<String, String> validator) {
         boolean filled = currentText != null && !currentText.isBlank() && !"example".equals(currentText);
         List<String> lore = new ArrayList<>();
-        lore.add("<dark_gray>目前: <gray>" + (filled ? currentText : "尚未設定"));
-        if (required) lore.add(filled ? "<green>✓ 必填" : "<red>✗ 必填");
-        lore.add("<yellow>點擊以輸入 (Anvil)");
+        lore.add(msg.fmt("gui.common.current-prefix", filled ? currentText : msg.getMessage("gui.common.not-set")));
+        if (required) lore.add(msg.getMessage(filled ? "gui.common.required-yes" : "gui.common.required-no"));
+        lore.add(msg.getMessage("gui.common.click-to-edit-anvil"));
         return ItemBuilder.from(mat)
-                .name(parser.parse("<yellow>" + name))
+                .name(parser.parse(msg.getMessage(nameKey)))
                 .lore(parser.parseList(lore))
                 .asGuiItem(event -> {
                     event.setCancelled(true);
@@ -355,7 +362,7 @@ public class CreateKothGui extends BaseUpdatableGui {
                                  Function<String, String> validator) {
         AnvilTextInput anvil = AnvilTextInput.get();
         if (anvil == null) {
-            player.sendMessage(parser.parse("<red>Anvil 輸入系統未初始化"));
+            player.sendMessage(parser.parse(msg.getMessage("gui.create-koth.chat-anvil-uninit")));
             return;
         }
         anvil.prompt(player, initial == null ? "" : initial,
@@ -372,14 +379,14 @@ public class CreateKothGui extends BaseUpdatableGui {
                 () -> open(player));
     }
 
-    private GuiItem numericItem(Player player, Material mat, String name, int value, String unit,
+    private GuiItem numericItem(Player player, Material mat, String nameKey, int value,
                                 Consumer<Integer> setter) {
         return ItemBuilder.from(mat)
-                .name(parser.parse("<yellow>" + name + ": <white>" + value + " " + unit))
+                .name(parser.parse(msg.fmt(nameKey, value)))
                 .lore(parser.parseList(List.of(
-                        "<dark_gray>右鍵 <gray>+1 / <dark_gray>左鍵 <gray>-1",
-                        "<dark_gray>Shift+右鍵 <gray>+10 / <dark_gray>Shift+左鍵 <gray>-10",
-                        "<dark_gray>中鍵 <gray>+60")))
+                        msg.getMessage("gui.create-koth.numeric-hint-1"),
+                        msg.getMessage("gui.create-koth.numeric-hint-2"),
+                        msg.getMessage("gui.create-koth.numeric-hint-3"))))
                 .glow()
                 .asGuiItem(event -> {
                     event.setCancelled(true);
@@ -391,11 +398,12 @@ public class CreateKothGui extends BaseUpdatableGui {
                 });
     }
 
-    private GuiItem toggleItem(Player player, String name, boolean current,
-                               String onText, String offText, Runnable toggle) {
+    private GuiItem toggleItem(Player player, String nameKey, boolean current, Runnable toggle) {
+        String label = msg.getMessage(current ? "gui.create-koth.toggle-on" : "gui.create-koth.toggle-off");
+        String coloured = msg.fmt(current ? "gui.create-koth.toggle-on-coloured" : "gui.create-koth.toggle-off-coloured", label);
         return ItemBuilder.from(current ? Material.LIME_DYE : Material.GRAY_DYE)
-                .name(parser.parse("<yellow>" + name))
-                .lore(parser.parse("<gray>目前: " + (current ? "<green>" + onText : "<red>" + offText)))
+                .name(parser.parse("<yellow>" + msg.getMessage(nameKey)))
+                .lore(parser.parse(msg.fmt("gui.create-koth.toggle-current", coloured)))
                 .asGuiItem(event -> {
                     event.setCancelled(true);
                     toggle.run();
@@ -403,41 +411,41 @@ public class CreateKothGui extends BaseUpdatableGui {
                 });
     }
 
-    // ===== Tab 1: 基本資料 =====
+    // ===== Tab 1: Basic =====
     private GuiItem itemId(Player player, Gui gui) {
         var data = cache.getKothToRegister(player.getUniqueId());
-        return promptItem(player, Material.BAMBOO_SIGN, "KOTH ID",
+        return promptItem(player, Material.BAMBOO_SIGN, "gui.create-koth.id-name",
                 data.getId(), true, data::setId,
                 text -> {
-                    if (text == null || text.isBlank()) return "ID 不可為空";
-                    if (!text.matches("^[A-Za-z0-9_-]+$")) return "ID 只能含英數字、_、-";
+                    if (text == null || text.isBlank()) return msg.getMessage("gui.create-koth.id-error-empty");
+                    if (!text.matches("^[A-Za-z0-9_-]+$")) return msg.getMessage("gui.create-koth.id-error-charset");
                     var current = cache.getKothToRegister(player.getUniqueId()).getId();
-                    if (!text.equals(current) && kothRegistry.get(text) != null) return "ID 已存在";
+                    if (!text.equals(current) && kothRegistry.get(text) != null) return msg.getMessage("gui.create-koth.id-error-clash");
                     return null;
                 });
     }
 
     private GuiItem itemDisplayName(Player player, Gui gui) {
         var data = cache.getKothToRegister(player.getUniqueId());
-        return promptItem(player, Material.CHERRY_SIGN, "顯示名稱",
+        return promptItem(player, Material.CHERRY_SIGN, "gui.create-koth.display-name-name",
                 data.getDisplayName(), true, data::setDisplayName,
-                text -> (text == null || text.isBlank()) ? "顯示名稱不可為空" : null);
+                text -> (text == null || text.isBlank()) ? msg.getMessage("gui.create-koth.display-name-error-empty") : null);
     }
 
     private GuiItem itemWand(Player player, Gui gui) {
         var area = cache.getKothToRegister(player.getUniqueId()).getArea();
         List<String> lore = new ArrayList<>();
         if (area == null) {
-            lore.add("<red>✗ 必填：尚未設定區域");
-            lore.add("<gray>點擊取得設定棒");
+            lore.add(msg.getMessage("gui.create-koth.area-not-set"));
+            lore.add(msg.getMessage("gui.create-koth.area-click-wand"));
         } else {
-            lore.add("<green>✓ 已設定");
-            lore.add("<light_purple>世界: <yellow>" + area.worldName());
-            lore.add("<gray>角點 1: <yellow>" + area.corner1().toString());
-            lore.add("<gray>角點 2: <yellow>" + area.corner2().toString());
+            lore.add(msg.getMessage("gui.create-koth.area-set-ok"));
+            lore.add(msg.fmt("gui.create-koth.area-world", area.worldName()));
+            lore.add(msg.fmt("gui.create-koth.area-corner1", area.corner1().toString()));
+            lore.add(msg.fmt("gui.create-koth.area-corner2", area.corner2().toString()));
         }
         return ItemBuilder.from(Material.BONE)
-                .name(parser.parse("<yellow>KOTH 區域"))
+                .name(parser.parse(msg.getMessage("gui.create-koth.area-name")))
                 .lore(parser.parseList(lore))
                 .asGuiItem(event -> {
                     event.setCancelled(true);
@@ -449,10 +457,11 @@ public class CreateKothGui extends BaseUpdatableGui {
     private GuiItem itemType(Player player, Gui gui) {
         var data = cache.getKothToRegister(player.getUniqueId());
         boolean capture = data.isCaptureType();
+        String label = msg.getMessage(capture ? "gui.create-koth.type-capture" : "gui.create-koth.type-score");
         return ItemBuilder.from(capture ? Material.DIAMOND_SWORD : Material.GOLDEN_AXE)
                 .flags(ItemFlag.HIDE_ATTRIBUTES)
-                .name(parser.parse("<yellow>佔領類型: <white>" + (capture ? "佔領 (Capture)" : "計分 (Score)")))
-                .lore(parser.parse("<gray>點擊切換"))
+                .name(parser.parse(msg.fmt("gui.create-koth.type-name", label)))
+                .lore(parser.parse(msg.getMessage("gui.create-koth.type-toggle-lore")))
                 .asGuiItem(event -> {
                     event.setCancelled(true);
                     data.setType(capture ? KothType.SCORE : KothType.CAPTURE);
@@ -464,8 +473,8 @@ public class CreateKothGui extends BaseUpdatableGui {
         var data = cache.getKothToRegister(player.getUniqueId());
         NotifyType current = data.getNotifyType();
         return ItemBuilder.from(Material.BELL)
-                .name(parser.parse("<yellow>通知方式: <white>" + current.getDisplayName()))
-                .lore(parser.parse("<gray>點擊切換顯示方式"))
+                .name(parser.parse(msg.fmt("gui.create-koth.notify-name", current.getDisplayName())))
+                .lore(parser.parse(msg.getMessage("gui.create-koth.notify-toggle-lore")))
                 .asGuiItem(event -> {
                     event.setCancelled(true);
                     NotifyType[] values = NotifyType.values();
@@ -474,34 +483,34 @@ public class CreateKothGui extends BaseUpdatableGui {
                 });
     }
 
-    // ===== Tab 2: 時間與計分 =====
+    // ===== Tab 2: Time & Scoreboard =====
     private GuiItem itemMaxTime(Player player, Gui gui) {
         var data = cache.getKothToRegister(player.getUniqueId());
-        return numericItem(player, Material.CLOCK, "最長活動時間", data.getMaxTime(), "秒",
+        return numericItem(player, Material.CLOCK, "gui.create-koth.max-time-name", data.getMaxTime(),
                 data::setMaxTime);
     }
 
     private GuiItem itemCaptureTime(Player player, Gui gui) {
         var data = cache.getKothToRegister(player.getUniqueId());
-        return numericItem(player, Material.COMPASS, "佔領所需時間", data.getCaptureTime(), "秒",
+        return numericItem(player, Material.COMPASS, "gui.create-koth.capture-time-name", data.getCaptureTime(),
                 data::setCaptureTime);
     }
 
     private GuiItem itemBossbar(Player player, Gui gui) {
         var data = cache.getKothToRegister(player.getUniqueId());
-        return toggleItem(player, "顯示頂部血條 (Bossbar)", data.isBossbarEnabled(),
-                "啟用", "停用", () -> data.setBossbarEnabled(!data.isBossbarEnabled()));
+        return toggleItem(player, "gui.create-koth.bossbar-toggle", data.isBossbarEnabled(),
+                () -> data.setBossbarEnabled(!data.isBossbarEnabled()));
     }
 
     private GuiItem itemScoreboardToggle(Player player, Gui gui) {
         var data = cache.getKothToRegister(player.getUniqueId());
-        return toggleItem(player, "啟用計分板", data.isScoreboardEnabled(),
-                "啟用", "停用", () -> data.setScoreboardEnabled(!data.isScoreboardEnabled()));
+        return toggleItem(player, "gui.create-koth.scoreboard-toggle", data.isScoreboardEnabled(),
+                () -> data.setScoreboardEnabled(!data.isScoreboardEnabled()));
     }
 
     private GuiItem itemWaitingBoardTitle(Player player, Gui gui) {
         var data = cache.getKothToRegister(player.getUniqueId());
-        return promptItem(player, Material.PAPER, "等待時計分板標題",
+        return promptItem(player, Material.PAPER, "gui.create-koth.board-waiting-title-name",
                 data.getScoreboardWaitingTitle(), false,
                 t -> { data.setScoreboardWaitingTitle(t); boardPreview.invalidate(player.getUniqueId()); },
                 null);
@@ -509,7 +518,7 @@ public class CreateKothGui extends BaseUpdatableGui {
 
     private GuiItem itemWaitingBoardLines(Player player, Gui gui) {
         return ItemBuilder.from(Material.WRITABLE_BOOK)
-                .name(parser.parse("<yellow>等待時計分板內容"))
+                .name(parser.parse(msg.getMessage("gui.create-koth.board-waiting-lines-name")))
                 .lore(boardPreview.getWaitingLore(player.getUniqueId()))
                 .asGuiItem(event -> {
                     event.setCancelled(true);
@@ -519,7 +528,7 @@ public class CreateKothGui extends BaseUpdatableGui {
 
     private GuiItem itemCapturingBoardTitle(Player player, Gui gui) {
         var data = cache.getKothToRegister(player.getUniqueId());
-        return promptItem(player, Material.NAME_TAG, "佔領時計分板標題",
+        return promptItem(player, Material.NAME_TAG, "gui.create-koth.board-capturing-title-name",
                 data.getScoreboardCapturingTitle(), false,
                 t -> { data.setScoreboardCapturingTitle(t); boardPreview.invalidate(player.getUniqueId()); },
                 null);
@@ -527,7 +536,7 @@ public class CreateKothGui extends BaseUpdatableGui {
 
     private GuiItem itemCapturingBoardLines(Player player, Gui gui) {
         return ItemBuilder.from(Material.BOOK)
-                .name(parser.parse("<yellow>佔領時計分板內容"))
+                .name(parser.parse(msg.getMessage("gui.create-koth.board-capturing-lines-name")))
                 .lore(boardPreview.getCapturingLore(player.getUniqueId()))
                 .asGuiItem(event -> {
                     event.setCancelled(true);
@@ -535,13 +544,12 @@ public class CreateKothGui extends BaseUpdatableGui {
                 });
     }
 
-    // ===== Tab 3: 獎勵與指令 =====
+    // ===== Tab 3: Rewards & Commands =====
     private GuiItem itemRewards(Player player, Gui gui) {
         var data = cache.getKothToRegister(player.getUniqueId());
-        int n = data.getPhysicalRewards().size();
         return ItemBuilder.from(Material.DIAMOND)
-                .name(parser.parse("<yellow>實體獎勵清單 <white>(" + n + " 項)"))
-                .lore(parser.parse("<gray>點擊管理獎勵物品"))
+                .name(parser.parse(msg.fmt("gui.create-koth.rewards-name", data.getPhysicalRewards().size())))
+                .lore(parser.parse(msg.getMessage("gui.create-koth.rewards-lore")))
                 .asGuiItem(event -> {
                     event.setCancelled(true);
                     guiService.openAddPhysicalRewardGui(player);
@@ -550,18 +558,18 @@ public class CreateKothGui extends BaseUpdatableGui {
 
     private GuiItem itemPoolInfo(Player player, Gui gui) {
         return ItemBuilder.from(Material.ENDER_PEARL)
-                .name(parser.parse("<aqua>獎勵發放規則"))
+                .name(parser.parse(msg.getMessage("gui.create-koth.pool-info-name")))
                 .lore(parser.parseList(List.of(
-                        "<gray>每位贏家會從獎勵清單中",
-                        "<gray>隨機抽 <yellow>1 項<gray>發放",
-                        "<dark_gray>離線玩家會在下次上線時補發")))
+                        msg.getMessage("gui.create-koth.pool-info-lore-1"),
+                        msg.getMessage("gui.create-koth.pool-info-lore-2"),
+                        msg.getMessage("gui.create-koth.pool-info-lore-3"))))
                 .asGuiItem(event -> event.setCancelled(true));
     }
 
     private GuiItem itemCommands(Player player, Gui gui) {
         return ItemBuilder.from(Material.COMMAND_BLOCK)
-                .name(parser.parse("<yellow>指令清單"))
-                .lore(parser.parse("<gray>管理開始/結束/獲勝指令"))
+                .name(parser.parse(msg.getMessage("gui.create-koth.commands-name")))
+                .lore(parser.parse(msg.getMessage("gui.create-koth.commands-lore")))
                 .asGuiItem(event -> {
                     event.setCancelled(true);
                     guiService.openCommandGui(player);
@@ -612,18 +620,19 @@ public class CreateKothGui extends BaseUpdatableGui {
     }
 
     private void refreshActive(Player player) {
-        // 同分頁內的某個欄位被改動：重新繪整個視窗（簡單可靠，不易遺漏 footer 更新）
         refreshAll(player);
     }
 
     private String translateError(String raw) {
         return switch (raw) {
-            case "ID cannot be empty" -> "ID";
-            case "Display name cannot be empty" -> "顯示名稱";
-            case "Max time must be greater than 0" -> "最長活動時間 > 0";
-            case "Capture time must be greater than 0" -> "佔領時間 > 0";
-            case "Area must be set" -> "區域";
-            case "KOTH type must be set" -> "佔領類型";
+            case "ID cannot be empty" -> msg.getMessage("gui.create-koth.err-name-id");
+            case "ID may only contain letters, digits, '_' and '-'" -> msg.getMessage("gui.create-koth.err-name-id");
+            case "Display name cannot be empty" -> msg.getMessage("gui.create-koth.err-name-display-name");
+            case "Max time must be greater than 0" -> msg.getMessage("gui.create-koth.err-name-max-time");
+            case "Capture time must be greater than 0" -> msg.getMessage("gui.create-koth.err-name-capture-time");
+            case "Capture time must not exceed max time" -> msg.getMessage("gui.create-koth.err-name-capture-time");
+            case "Area must be set" -> msg.getMessage("gui.create-koth.err-name-area");
+            case "KOTH type must be set" -> msg.getMessage("gui.create-koth.err-name-type");
             default -> raw;
         };
     }
